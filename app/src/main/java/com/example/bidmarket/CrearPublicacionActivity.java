@@ -10,6 +10,14 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
+import android.net.Uri;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import android.widget.ImageView;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -22,6 +30,9 @@ public class CrearPublicacionActivity extends AppCompatActivity {
     private Spinner spinnerCondicion;
     private Button btnPublicar;
     private BidMarketDbHelper dbHelper;
+    private ImageView ivVistaPrevia;
+    private Button btnSeleccionarImagen;
+    private String rutaImagenAbsoluta = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,10 +47,14 @@ public class CrearPublicacionActivity extends AppCompatActivity {
         etUbicacion = findViewById(R.id.etUbicacionPub);
         spinnerCondicion = findViewById(R.id.spinnerCondicion);
         btnPublicar = findViewById(R.id.btnPublicar);
+        // Imagenes
+        ivVistaPrevia = findViewById(R.id.ivVistaPrevia);
+        btnSeleccionarImagen = findViewById(R.id.btnSeleccionarImagen);
 
         configurarSpinner();
 
         btnPublicar.setOnClickListener(v -> guardarPublicacion());
+        btnSeleccionarImagen.setOnClickListener(v -> selectorImagen.launch("image/*"));
     }
 
     private void configurarSpinner() {
@@ -100,10 +115,51 @@ public class CrearPublicacionActivity extends AppCompatActivity {
         long resultadoId = db.insert("publicaciones", null, values);
 
         if (resultadoId != -1) {
+            if (rutaImagenAbsoluta != null) {
+                ContentValues imgValues = new ContentValues();
+                imgValues.put("publicacion_id", resultadoId); // Relación con la publicación[cite: 2]
+                imgValues.put("image_url", rutaImagenAbsoluta); // Ruta interna única[cite: 2]
+                imgValues.put("display_order", 1); // Orden de visualización[cite: 2]
+
+                db.insert("imagenes", null, imgValues);
+            }
+
             Toast.makeText(this, "Publicación creada con éxito", Toast.LENGTH_SHORT).show();
             finish(); // Cierra esta Activity y vuelve al Dashboard
         } else {
             Toast.makeText(this, "Error al crear la publicación", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private final ActivityResultLauncher<String> selectorImagen = registerForActivityResult(
+            new ActivityResultContracts.GetContent(),
+            uri -> {
+                if (uri != null) {
+                    ivVistaPrevia.setImageURI(uri);
+                    rutaImagenAbsoluta = guardarImagenEnAlmacenamientoInterno(uri);
+                }
+            }
+    );
+
+    private String guardarImagenEnAlmacenamientoInterno(Uri uri) {
+        try {
+            InputStream inputStream = getContentResolver().openInputStream(uri);
+            // Generar un nombre único para evitar violar el UNIQUE constraint de image_url
+            File archivoDestino = new File(getFilesDir(), "prod_" + System.currentTimeMillis() + ".jpg");
+            FileOutputStream outputStream = new FileOutputStream(archivoDestino);
+
+            byte[] buffer = new byte[1024];
+            int length;
+            while ((length = inputStream.read(buffer)) > 0) {
+                outputStream.write(buffer, 0, length);
+            }
+
+            outputStream.close();
+            inputStream.close();
+            return archivoDestino.getAbsolutePath();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

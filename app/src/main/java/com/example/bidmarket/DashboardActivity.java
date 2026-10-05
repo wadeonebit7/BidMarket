@@ -7,6 +7,17 @@ import android.os.Bundle;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import java.util.ArrayList;
+import java.util.List;
+
 import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -16,10 +27,10 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 
-
 public class DashboardActivity extends AppCompatActivity {
 
     private RecyclerView rvPublicaciones;
+    private FloatingActionButton fabAgregarPublicacion;
     private PublicacionAdapter adapter;
     private List<Publicacion> listaPublicaciones;
     private BidMarketDbHelper dbHelper;
@@ -28,18 +39,35 @@ public class DashboardActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dashboard);
+        EdgeToEdge.enable(this);
 
         dbHelper = new BidMarketDbHelper(this);
+
+        // Enlaces a la vista
         rvPublicaciones = findViewById(R.id.rvPublicaciones);
+        fabAgregarPublicacion = findViewById(R.id.fabAgregarPublicacion); // <-- LÍNEA FALTANTE AGREGADA
 
         // Configurar el RecyclerView para que se muestre como una lista vertical
         rvPublicaciones.setLayoutManager(new LinearLayoutManager(this));
 
         listaPublicaciones = new ArrayList<>();
-        cargarPublicaciones();
-
         adapter = new PublicacionAdapter(listaPublicaciones);
         rvPublicaciones.setAdapter(adapter);
+
+        // Configurar el click del botón flotante
+        fabAgregarPublicacion.setOnClickListener(v -> {
+            Intent intent = new Intent(DashboardActivity.this, CrearPublicacionActivity.class);
+            startActivity(intent);
+        });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Al regresar a esta pantalla, limpiamos la lista y volvemos a consultar la base de datos
+        listaPublicaciones.clear();
+        cargarPublicaciones();
+        adapter.notifyDataSetChanged(); // Notificamos al adaptador que hay nueva información
     }
 
     private void cargarPublicaciones() {

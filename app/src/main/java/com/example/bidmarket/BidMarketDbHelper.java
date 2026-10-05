@@ -96,6 +96,12 @@ public class BidMarketDbHelper extends SQLiteOpenHelper {
         // 7. Crear índices
         db.execSQL("CREATE INDEX idx_publicaciones_categoria ON publicaciones(categoria_id);");
         db.execSQL("CREATE INDEX idx_publicaciones_vendedor ON publicaciones(vendedor_id);");
+
+        // NUEVO: Insertar categorías por defecto para evitar el error de clave foránea
+        db.execSQL("INSERT INTO categorias (name) VALUES ('Electrónica');");
+        db.execSQL("INSERT INTO categorias (name) VALUES ('Hogar');");
+        db.execSQL("INSERT INTO categorias (name) VALUES ('Vehículos');");
+        db.execSQL("INSERT INTO categorias (name) VALUES ('Ropa y Accesorios');");
     }
 
     @Override

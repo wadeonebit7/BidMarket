@@ -55,13 +55,37 @@ public class LoginActivity extends AppCompatActivity {
         if (cursor != null && cursor.moveToFirst()) {
             // Se encontró la cuenta
             int indexStatus = cursor.getColumnIndex("status");
+            int indexId = cursor.getColumnIndex("id");
+
             String status = cursor.getString(indexStatus);
+            int cuentaId = cursor.getInt(indexId); // ID de la tabla cuentas
 
             if ("ACTIVE".equals(status)) {
-                Toast.makeText(this, "¡Bienvenido a BidMarket!", Toast.LENGTH_SHORT).show();
-                Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
-                startActivity(intent);
-                finish();
+                // Buscar el ID del usuario asociado a esta cuenta en la tabla 'usuarios'
+                Cursor cursorUsuario = db.query("usuarios", new String[]{"id"}, "cuentas_id = ?",
+                        new String[]{String.valueOf(cuentaId)}, null, null, null);
+
+                if (cursorUsuario != null && cursorUsuario.moveToFirst()) {
+                    int usuarioId = cursorUsuario.getInt(0); // ID de la tabla usuarios
+
+                    // Guardar el usuarioId en SharedPreferences
+                    getSharedPreferences("MisPreferencias", MODE_PRIVATE)
+                            .edit()
+                            .putInt("usuario_id", usuarioId)
+                            .apply();
+
+                    cursorUsuario.close();
+
+                    Toast.makeText(this, "¡Bienvenido a BidMarket!", Toast.LENGTH_SHORT).show();
+
+                    // Redirigir al Dashboard
+                    Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
+                    startActivity(intent);
+                    finish();
+                } else {
+                    Toast.makeText(this, "Error: Perfil de usuario no encontrado.", Toast.LENGTH_SHORT).show();
+                }
+
             } else {
                 Toast.makeText(this, "Tu cuenta no está activa. Estado: " + status, Toast.LENGTH_LONG).show();
             }
