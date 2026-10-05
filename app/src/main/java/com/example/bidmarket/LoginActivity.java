@@ -59,10 +59,9 @@ public class LoginActivity extends AppCompatActivity {
 
             if ("ACTIVE".equals(status)) {
                 Toast.makeText(this, "¡Bienvenido a BidMarket!", Toast.LENGTH_SHORT).show();
-                // Aquí navegas a tu MainActivity o panel principal
-                // Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                // startActivity(intent);
-                // finish();
+                Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
+                startActivity(intent);
+                finish();
             } else {
                 Toast.makeText(this, "Tu cuenta no está activa. Estado: " + status, Toast.LENGTH_LONG).show();
             }
