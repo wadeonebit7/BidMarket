@@ -1,14 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="#F5F5F5">
 
+  <!-- 1. Agregamos la barra superior (Toolbar) -->
+  <com.google.android.material.appbar.MaterialToolbar
+      android:id="@+id/topAppBar"
+      android:layout_width="match_parent"
+      android:layout_height="?attr/actionBarSize"
+      android:background="#673AB7"
+      app:title="BidMarket"
+      app:titleTextColor="#FFFFFF" />
+
+  <!-- 2. Hacemos que el título quede debajo del Toolbar -->
   <TextView
       android:id="@+id/tvTituloDashboard"
       android:layout_width="match_parent"
       android:layout_height="wrap_content"
+      android:layout_below="@id/topAppBar"
       android:text="Últimas Publicaciones"
       android:textSize="22sp"
       android:textStyle="bold"

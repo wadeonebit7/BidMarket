@@ -6,25 +6,20 @@ import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import java.util.ArrayList;
 import java.util.List;
-
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.floatingactionbutton.FloatingActionButton;
-import java.util.ArrayList;
-import java.util.List;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.content.SharedPreferences;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
+import androidx.activity.EdgeToEdge;
 
 
 public class DashboardActivity extends AppCompatActivity {
@@ -38,10 +33,21 @@ public class DashboardActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_dashboard);
         EdgeToEdge.enable(this);
+        setContentView(R.layout.activity_dashboard);
+
+        // Bloque para respetar las barras del sistema
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         dbHelper = new BidMarketDbHelper(this);
+
+        // Enlazar y configurar el Toolbar
+        Toolbar toolbar = findViewById(R.id.topAppBar);
+        setSupportActionBar(toolbar);
 
         // Enlaces a la vista
         rvPublicaciones = findViewById(R.id.rvPublicaciones);
@@ -97,5 +103,36 @@ public class DashboardActivity extends AppCompatActivity {
             } while (cursor.moveToNext());
         }
         cursor.close();
+    }
+
+    // 1. Mostrar el menú en la barra superior
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_dashboard, menu);
+        return true;
+    }
+
+    // 2. Detectar cuando se presiona un elemento del menú
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_logout) {
+            cerrarSesion();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void cerrarSesion() {
+        // 1. Borrar los datos de SharedPreferences
+        getSharedPreferences("MisPreferencias", MODE_PRIVATE)
+                .edit()
+                .clear() // Esto elimina el usuario_id guardado
+                .apply();
+
+        // 2. Redirigir al Login y limpiar la pila de actividades
+        Intent intent = new Intent(DashboardActivity.this, LoginActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }

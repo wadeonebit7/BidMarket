@@ -1,17 +1,14 @@
 package com.example.bidmarket;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class LoginActivity extends AppCompatActivity {
 
@@ -22,6 +19,21 @@ public class LoginActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // 1. VERIFICAR SESIÓN ACTIVA ANTES DE CARGAR LA INTERFAZ
+        SharedPreferences prefs = getSharedPreferences("MisPreferencias", MODE_PRIVATE);
+        int usuarioId = prefs.getInt("usuario_id", -1);
+
+        if (usuarioId != -1) {
+            // El usuario ya tiene sesión. Redirigir al Dashboard.
+            irAlDashboard();
+            return; // Detenemos la ejecución del onCreate aquí
+        }
+
+        // Si no hay sesión, cargamos la interfaz de Login de forma normal
+        // Evita captura de pantalla en miniatura multitarea para proteger las contraseñas
+        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE);
+
         setContentView(R.layout.activity_login);
 
         dbHelper = new BidMarketDbHelper(this);
@@ -94,5 +106,14 @@ public class LoginActivity extends AppCompatActivity {
             Toast.makeText(this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
             if (cursor != null) cursor.close();
         }
+    }
+
+    // Método auxiliar para manejar la navegación y limpiar la pila de actividades
+    private void irAlDashboard() {
+        Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
+        // Estas dos banderas eliminan el LoginActivity y cualquier otra pantalla previa de la memoria
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
     }
 }
