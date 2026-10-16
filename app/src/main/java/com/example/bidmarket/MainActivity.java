@@ -17,6 +17,23 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         EdgeToEdge.enable(this);
+
+        int usuarioId = getSharedPreferences(
+                "MisPreferencias",
+                MODE_PRIVATE
+        ).getInt("usuario_id", -1);
+
+        if (usuarioId > 0) {
+            Intent intent = new Intent(
+                    MainActivity.this,
+                    DashboardActivity.class
+            );
+
+            startActivity(intent);
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         // Botón para ir a Iniciar Sesión
