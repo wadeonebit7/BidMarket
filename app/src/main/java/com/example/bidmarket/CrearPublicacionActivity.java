@@ -32,11 +32,32 @@ public class CrearPublicacionActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private List<PublicacionRepository.Categoria> categoryList=new ArrayList<>();
     private String imagenRuta;
+    private final ArrayList<String> fotos = new ArrayList<>();
+    private final ActivityResultLauncher<Intent> editorFotos = registerForActivityResult(
+        new ActivityResultContracts.StartActivityForResult(), result -> {
+            if (result.getResultCode() != RESULT_OK || result.getData() == null) return;
+            ArrayList<String> nuevas = result.getData().getStringArrayListExtra("rutas");
+            if (nuevas == null) return;
+            fotos.clear(); fotos.addAll(nuevas);
+            actualizarPortada();
+        });
+    private void actualizarPortada() {
+        imagenRuta = fotos.isEmpty() ? null : fotos.get(0);
+        imagenVista.setImageDrawable(null);
+        if (imagenRuta != null) imagenVista.setImageURI(Uri.fromFile(new File(imagenRuta)));
+        ((Button)findViewById(R.id.btnSeleccionarImagen)).setText(
+            "Gestionar fotografías (" + fotos.size() + "/10)");
+    }
+    private void abrirEditorFotos() {
+        Intent intent = new Intent(this, GaleriaProductoActivity.class);
+        intent.putStringArrayListExtra("rutas", new ArrayList<>(fotos));
+        editorFotos.launch(intent);
+    }
     private long finMs=0,editarId=0;
     private Double latitud=null,longitud=null;
     private final ActivityResultLauncher<String> gpsPermiso=registerForActivityResult(new RequestPermission(), ok->{if(ok)capturarGps();else mensaje("Permiso de ubicación denegado");});
     private final String[] opcionesCondicion={"Nuevo","Usado como nuevo","Buen Estado","Aceptable"};
-    private final ActivityResultLauncher<String> selector=registerForActivityResult(new ActivityResultContracts.GetContent(),uri->{if(uri!=null)copiarImagen(uri);});
+
 
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);setContentView(R.layout.activity_crear_publicacion);
@@ -67,11 +88,12 @@ public class CrearPublicacionActivity extends AppCompatActivity {
             @Override public void onNothingSelected(android.widget.AdapterView<?> p){}
         });
         io.execute(()->{List<PublicacionRepository.Categoria> r=repo.categorias();runOnUiThread(()->{categoryList=r;categorias.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_spinner_dropdown_item,r));});});
-        findViewById(R.id.btnSeleccionarImagen).setOnClickListener(v->selector.launch("image/*"));
+        findViewById(R.id.btnSeleccionarImagen).setOnClickListener(v->abrirEditorFotos());
         finButton.setOnClickListener(v->elegirFecha());
         findViewById(R.id.btnUsarGps).setOnClickListener(v->{if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED)capturarGps();else gpsPermiso.launch(Manifest.permission.ACCESS_FINE_LOCATION);});
         findViewById(R.id.btnPublicar).setOnClickListener(v->guardar());
         editarId=getIntent().getLongExtra("publicacion_id",0);
+        actualizarPortada();
         if(editarId>0) cargarParaEditar();
     }
 
@@ -108,12 +130,14 @@ public class CrearPublicacionActivity extends AppCompatActivity {
                 String t=c.getString(3),d=c.getString(4),p=""+c.getDouble(5),co=c.getString(6),u=c.getString(8),mo=c.getString(11),im=c.getString(12);
                 long cat=c.getLong(2);
                 if(!c.isNull(9)&&!c.isNull(10)){latitud=c.getDouble(9);longitud=c.getDouble(10);}
+                List<String> imagenesGuardadas = new ImagenesRepository(this).listar(editarId);
                 long[] state=repo.estadoSubasta(editarId);
                 runOnUiThread(()->{
+                    fotos.clear();fotos.addAll(imagenesGuardadas);
                     titulo.setText(t);descripcion.setText(d);precio.setText(p);ubicacion.setText(u);
                     for(int i=0;i<opcionesCondicion.length;i++)if(opcionesCondicion[i].equals(co))condiciones.setSelection(i);
                     modalidad.setSelection("SUBASTA".equals(mo)?1:0);if(state!=null){finMs=state[1];finButton.setText("Finaliza: "+new Date(finMs));}
-                    if(im!=null){imagenRuta=im;imagenVista.setImageURI(Uri.fromFile(new File(im)));}
+                    actualizarPortada();
                     elegirCategoriaCuandoLista(cat);
                     ((Button)findViewById(R.id.btnPublicar)).setText("Guardar cambios");
                 });
@@ -136,10 +160,12 @@ public class CrearPublicacionActivity extends AppCompatActivity {
         if(id<=0){mensaje("Inicia sesión nuevamente");return;}
         long cat=categoryList.get(categorias.getSelectedItemPosition()).id;
         String condicionSeleccionada=opcionesCondicion[condiciones.getSelectedItemPosition()];
+        if (fotos.isEmpty()) { mensaje("Debes agregar al menos una imagen"); return; }
+        final ArrayList<String> imagenesGuardar = new ArrayList<>(fotos);
         final Double latGuardada=latitud,lonGuardada=longitud;
         findViewById(R.id.btnPublicar).setEnabled(false);
         io.execute(()->{
-            try{repo.guardar(editarId,id,cat,t,d,valor,condicionSeleccionada,u,imagenRuta,sub,System.currentTimeMillis(),finMs,latGuardada,lonGuardada);
+            try{repo.guardar(editarId,id,cat,t,d,valor,condicionSeleccionada,u,imagenRuta,sub,System.currentTimeMillis(),finMs,latGuardada,lonGuardada,imagenesGuardar);
                 runOnUiThread(()->{mensaje("Publicación guardada");finish();});
             }catch(Exception e){runOnUiThread(()->{findViewById(R.id.btnPublicar).setEnabled(true);mensaje("Error: "+e.getMessage());});}
         });
