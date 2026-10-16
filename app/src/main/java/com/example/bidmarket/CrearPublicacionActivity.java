@@ -20,6 +20,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import android.graphics.Color;
+import android.view.View;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import android.view.View;
 
@@ -61,21 +68,46 @@ public class CrearPublicacionActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);setContentView(R.layout.activity_crear_publicacion);
+
+        WindowCompat.setDecorFitsSystemWindows(
+                getWindow(), false
+        );
+
+        // Barras transparentes
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+
+        // Iconos oscuros, adecuados para el fondo claro
+        WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightStatusBars(true);
+
+        WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightNavigationBars(true);
+
+        // Respetar barras del sistema
         View root = findViewById(R.id.main);
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
-            androidx.core.graphics.Insets systemBars =
-                    insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            Insets barras = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+            );
 
             v.setPadding(
-                    systemBars.left,
-                    systemBars.top,
-                    systemBars.right,
-                    systemBars.bottom
+                    barras.left,
+                    barras.top,
+                    barras.right,
+                    barras.bottom
             );
 
             return insets;
         });
+
+        ViewCompat.requestApplyInsets(root);
 
         repo=new PublicacionRepository(this);
         titulo=findViewById(R.id.etTituloPub);descripcion=findViewById(R.id.etDescripcionPub);precio=findViewById(R.id.etPrecioPub);
