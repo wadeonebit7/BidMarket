@@ -80,6 +80,50 @@ public class GaleriaProductoActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_galeria_producto);
+
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(
+                getWindow(), false
+        );
+
+        getWindow().setStatusBarColor(
+                android.graphics.Color.TRANSPARENT
+        );
+        getWindow().setNavigationBarColor(
+                android.graphics.Color.TRANSPARENT
+        );
+
+        androidx.core.view.WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightStatusBars(true);
+
+        androidx.core.view.WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightNavigationBars(true);
+
+        android.view.View root = findViewById(R.id.main);
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
+                root, (v, insets) -> {
+
+                    androidx.core.graphics.Insets barras = insets.getInsets(
+                            androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                                    | androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+                    );
+
+                    v.setPadding(
+                            barras.left,
+                            barras.top,
+                            barras.right,
+                            barras.bottom
+                    );
+
+                    return insets;
+                });
+
+        androidx.core.view.ViewCompat.requestApplyInsets(root);
+
         lista = findViewById(R.id.listaFotos);
         contador = findViewById(R.id.contadorFotos);
         ArrayList<String> iniciales = getIntent().getStringArrayListExtra("rutas");
