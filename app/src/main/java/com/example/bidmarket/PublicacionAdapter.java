@@ -1,6 +1,7 @@
 package com.example.bidmarket;
 
 import com.example.bidmarket.Models.Publicacion;
+import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -8,53 +9,26 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
+import java.io.File;
 import java.util.List;
 
 public class PublicacionAdapter extends RecyclerView.Adapter<PublicacionAdapter.ViewHolder> {
-    private List<Publicacion> listaPublicaciones;
-
-    public PublicacionAdapter(List<Publicacion> listaPublicaciones) {
-        this.listaPublicaciones = listaPublicaciones;
+    public interface Click {void abrir(Publicacion pub);}
+    private final List<Publicacion> datos;
+    private final Click click;
+    public PublicacionAdapter(List<Publicacion> datos, Click click){this.datos=datos;this.click=click;}
+    public void reemplazar(List<Publicacion> otros){datos.clear();datos.addAll(otros);notifyDataSetChanged();}
+    @NonNull @Override public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent,int type){return new ViewHolder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_publicacion,parent,false));}
+    @Override public void onBindViewHolder(@NonNull ViewHolder h,int pos){
+        Publicacion p=datos.get(pos);h.titulo.setText(p.getTitulo());h.precio.setText("CLP $"+String.format(java.util.Locale.getDefault(),"%,.0f",p.getPrecio()));
+        h.condicion.setText(p.getCondicion()+("SUBASTA".equals(p.getModalidad())?" · Subasta":" · Venta directa"));
+        h.imagen.setImageDrawable(null);
+        if(p.getImageUrl()!=null)h.imagen.setImageURI(Uri.fromFile(new File(p.getImageUrl())));
+        h.itemView.setOnClickListener(v->click.abrir(p));
     }
-
-    @NonNull
-    @Override
-    public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_publicacion, parent, false);
-        return new ViewHolder(view);
-    }
-
-    @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        Publicacion pub = listaPublicaciones.get(position);
-
-        holder.tvTitulo.setText(pub.getTitulo());
-        holder.tvPrecio.setText(String.format("%s %.2f", pub.getMoneda(), pub.getPrecio()));
-
-        String condicion = pub.getCondicion().equals("NEW") ? "Nuevo" : "Usado";
-        holder.tvCondicion.setText(condicion);
-
-        // NOTA: Para cargar la URL de la imagen en holder.ivProducto,
-        // lo ideal es usar una librería como Glide o Picasso.
-        // Por ahora, dejamos el ImageView con su color por defecto.
-    }
-
-    @Override
-    public int getItemCount() {
-        return listaPublicaciones.size();
-    }
-
-    public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView tvTitulo, tvPrecio, tvCondicion;
-        ImageView ivProducto;
-
-        public ViewHolder(@NonNull View itemView) {
-            super(itemView);
-            tvTitulo = itemView.findViewById(R.id.tvTitulo);
-            tvPrecio = itemView.findViewById(R.id.tvPrecio);
-            tvCondicion = itemView.findViewById(R.id.tvCondicion);
-            ivProducto = itemView.findViewById(R.id.ivProducto);
-        }
+    @Override public int getItemCount(){return datos.size();}
+    static class ViewHolder extends RecyclerView.ViewHolder{
+        TextView titulo,precio,condicion;ImageView imagen;
+        ViewHolder(View v){super(v);titulo=v.findViewById(R.id.tvTitulo);precio=v.findViewById(R.id.tvPrecio);condicion=v.findViewById(R.id.tvCondicion);imagen=v.findViewById(R.id.ivProducto);}
     }
 }
