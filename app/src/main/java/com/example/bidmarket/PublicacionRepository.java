@@ -43,7 +43,7 @@ public class PublicacionRepository {
     }
 
     public long guardar(long id, int vendedorId, long categoriaId, String titulo, String descripcion, double precio,
-                        String condicion, String ubicacion, String imagen, boolean subasta, long inicio, long fin, Double lat, Double lon) {
+                        String condicion, String ubicacion, String imagen, boolean subasta, long inicio, long fin, Double lat, Double lon, List<String> rutasImagenes) {
         if (precio<=0 || titulo.trim().isEmpty() || ubicacion.trim().isEmpty() || vendedorId<=0) throw new IllegalArgumentException("Datos de publicación inválidos");
         SQLiteDatabase db=helper.getWritableDatabase(); db.beginTransaction();
         try {
@@ -60,10 +60,16 @@ public class PublicacionRepository {
                 if(db.update("publicaciones",v,"id=? AND vendedor_id=? AND status IN ('Activo','Pausado')",new String[]{""+id,""+vendedorId})!=1)
                     throw new IllegalArgumentException("Solo el propietario puede editar una publicación vigente");
             }
-            if(imagen!=null) {
-                ContentValues iv=new ContentValues();iv.put("publicacion_id",pid);iv.put("image_url",imagen);iv.put("display_order",1);
-                db.delete("imagenes","publicacion_id=? AND display_order=1",new String[]{""+pid});
-                db.insertOrThrow("imagenes",null,iv);
+            if (rutasImagenes == null || rutasImagenes.isEmpty() || rutasImagenes.size() > 10)
+                throw new IllegalArgumentException("Agrega de 1 a 10 imágenes");
+            db.delete("imagenes", "publicacion_id=?", new String[]{Long.toString(pid)});
+            int orden=1;
+            for (String ruta: rutasImagenes) {
+                ContentValues iv = new ContentValues();
+                iv.put("publicacion_id", pid);
+                iv.put("image_url", ruta);
+                iv.put("display_order", orden++);
+                db.insertOrThrow("imagenes", null, iv);
             }
             if(subasta) {
                 if(fin<=inicio || fin<=System.currentTimeMillis()) throw new IllegalArgumentException("La subasta debe finalizar en el futuro");
