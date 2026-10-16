@@ -14,6 +14,7 @@
   <Button android:id="@+id/btnPausar" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Pausar" android:visibility="gone" />
   <Button android:id="@+id/btnVendido" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Marcar vendido" android:visibility="gone" />
   <Button android:id="@+id/btnEliminar" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Eliminar" android:visibility="gone" />
+  <Button android:id="@+id/btnChatVendedor" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Contactar vendedor" android:visibility="gone" />
   <Button android:id="@+id/btnMapa" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Ver mapa y mi ubicación" />
   <Button android:id="@+id/btnCompartir" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Compartir publicación" />
  </LinearLayout>

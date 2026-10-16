@@ -35,6 +35,11 @@ public class DetallePublicacionActivity extends AppCompatActivity {
             .setMessage("Esto registra un acuerdo de compra en este teléfono. No procesa pagos ni avisa al vendedor en otro dispositivo.")
             .setNegativeButton("Cancelar",null).setPositiveButton("Confirmar",(d,w)->comprar()).show());
         findViewById(R.id.btnCompartir).setOnClickListener(v->{Intent send=new Intent(Intent.ACTION_SEND);send.setType("text/plain");send.putExtra(Intent.EXTRA_TEXT,"Mira esta publicación de BidMarket+: "+titulo+" (ID "+pubId+")");startActivity(Intent.createChooser(send,"Compartir"));});
+        findViewById(R.id.btnChatVendedor).setOnClickListener(v->io.execute(()->{
+            try { long chat=new ChatRepository(this).iniciar(pubId,usuarioId);
+                runOnUiThread(()->{Intent i=new Intent(this,ChatActivity.class);i.putExtra("chat_id",chat);startActivity(i);});
+            }catch(Exception e){runOnUiThread(()->mensaje(e.getMessage()));}
+        }));
         findViewById(R.id.btnMapa).setOnClickListener(v->{Intent i=new Intent(this,MapaActivity.class);i.putExtra("publicacion_id",pubId);startActivity(i);});
     }
     @Override protected void onResume(){super.onResume();cargar();}
@@ -52,6 +57,11 @@ public class DetallePublicacionActivity extends AppCompatActivity {
                 if(image!=null)((ImageView)findViewById(R.id.detImagen)).setImageURI(Uri.fromFile(new File(image)));
                 for(int id:new int[]{R.id.btnEditar,R.id.btnPausar,R.id.btnEliminar,R.id.btnVendido})findViewById(id).setVisibility(propietario?View.VISIBLE:View.GONE);
                 boolean sub="SUBASTA".equals(mode)&&auction!=null;
+                boolean permitido=!propietario&&!"Borrado".equals(status)&&
+                        ("SUBASTA".equals(mode) ? (auction!=null &&
+                        System.currentTimeMillis()>=auction[1]) :
+                        ("Activo".equals(status)||"Vendido".equals(status)));
+                findViewById(R.id.btnChatVendedor).setVisibility(permitido?View.VISIBLE:View.GONE);
                 findViewById(R.id.btnComprar).setVisibility(!sub&&!propietario&&"Activo".equals(status)?View.VISIBLE:View.GONE);
                 findViewById(R.id.btnPujar).setVisibility(sub&&!propietario?View.VISIBLE:View.GONE);
                 findViewById(R.id.etMontoPuja).setVisibility(sub&&!propietario?View.VISIBLE:View.GONE);

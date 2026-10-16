@@ -1,52 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F5F5">
+    android:background="#F7F8FA">
 
-  <!-- 1. Agregamos la barra superior (Toolbar) -->
-  <com.google.android.material.appbar.MaterialToolbar
-      android:id="@+id/topAppBar"
-      android:layout_width="match_parent"
-      android:layout_height="?attr/actionBarSize"
-      android:background="#673AB7"
-      app:title="BidMarket"
-      app:titleTextColor="#FFFFFF" />
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
+        android:background="#202936"
+        app:title="BidMarket+"
+        app:titleTextColor="#FFFFFF"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-  <!-- 2. Hacemos que el título quede debajo del Toolbar -->
-  <TextView
-      android:id="@+id/tvTituloDashboard"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:layout_below="@id/topAppBar"
-      android:text="Últimas Publicaciones"
-      android:textSize="22sp"
-      android:textStyle="bold"
-      android:padding="16dp"
-      android:textColor="#333333"/>
+    <TextView
+        android:id="@+id/tvTituloDashboard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="22dp"
+        android:layout_marginEnd="20dp"
+        android:text="Explora publicaciones"
+        android:textColor="#202936"
+        android:textSize="23sp"
+        android:fontFamily="sans"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-  <!-- El RecyclerView se ubica debajo del título -->
-  <androidx.recyclerview.widget.RecyclerView
-      android:id="@+id/rvPublicaciones"
-      android:layout_width="match_parent"
-      android:layout_height="match_parent"
-      android:layout_below="@id/tvTituloDashboard"
-      android:padding="8dp"
-      android:clipToPadding="false"/>
+    <TextView
+        android:id="@+id/tvSubtituloDashboard"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="20dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginTop="4dp"
+        android:text="Encuentra algo especial para ti"
+        android:textColor="#748091"
+        android:textSize="13sp"
+        app:layout_constraintTop_toBottomOf="@id/tvTituloDashboard"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-  <!-- Botón Flotante para crear publicación -->
-  <com.google.android.material.floatingactionbutton.FloatingActionButton
-      android:id="@+id/fabAgregarPublicacion"
-      android:layout_width="wrap_content"
-      android:layout_height="wrap_content"
-      android:layout_alignParentBottom="true"
-      android:layout_alignParentEnd="true"
-      android:layout_margin="24dp"
-      android:contentDescription="Nueva Publicación"
-      android:src="@android:drawable/ic_input_add"
-      app:backgroundTint="#673AB7"
-      app:tint="#FFFFFF"/>
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/rvPublicaciones"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="14dp"
+        android:paddingStart="10dp"
+        android:paddingEnd="10dp"
+        android:paddingBottom="12dp"
+        android:clipToPadding="false"
+        android:scrollbars="vertical"
+        app:layout_constraintTop_toBottomOf="@id/tvSubtituloDashboard"
+        app:layout_constraintBottom_toTopOf="@id/fabAgregarPublicacion"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
-</RelativeLayout>
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
+        android:id="@+id/fabAgregarPublicacion"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:text="Publicar producto"
+        android:textColor="#FFFFFF"
+        android:contentDescription="Crear una nueva publicación"
+        app:icon="@android:drawable/ic_input_add"
+        app:iconTint="#FFFFFF"
+        app:backgroundTint="#202936"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+</androidx.constraintlayout.widget.ConstraintLayout>

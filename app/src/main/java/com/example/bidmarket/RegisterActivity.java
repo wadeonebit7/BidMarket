@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -14,6 +17,11 @@ public class RegisterActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private EditText nombre,usuario,correo,pass,confirmacion;private CheckBox terminos;private Button boton;
     @Override protected void onCreate(Bundle state){super.onCreate(state);setContentView(R.layout.activity_register);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
+            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+            return insets;
+        });
         nombre=findViewById(R.id.etNombre);usuario=findViewById(R.id.etUsername);correo=findViewById(R.id.etEmail);
         pass=findViewById(R.id.etPassword);confirmacion=findViewById(R.id.etRepetirPassword);
         terminos=findViewById(R.id.cbTerminos);boton=findViewById(R.id.btnRegistrarse);

@@ -18,6 +18,10 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
+
+import android.view.View;
 
 public class CrearPublicacionActivity extends AppCompatActivity {
     private EditText titulo,descripcion,precio,ubicacion;
@@ -36,6 +40,22 @@ public class CrearPublicacionActivity extends AppCompatActivity {
 
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);setContentView(R.layout.activity_crear_publicacion);
+        View root = findViewById(R.id.main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            androidx.core.graphics.Insets systemBars =
+                    insets.getInsets(WindowInsetsCompat.Type.systemBars());
+
+            v.setPadding(
+                    systemBars.left,
+                    systemBars.top,
+                    systemBars.right,
+                    systemBars.bottom
+            );
+
+            return insets;
+        });
+
         repo=new PublicacionRepository(this);
         titulo=findViewById(R.id.etTituloPub);descripcion=findViewById(R.id.etDescripcionPub);precio=findViewById(R.id.etPrecioPub);
         ubicacion=findViewById(R.id.etUbicacionPub);condiciones=findViewById(R.id.spinnerCondicion);categorias=findViewById(R.id.spinnerCategoria);
