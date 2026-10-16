@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 
 public class BidMarketDbHelper extends SQLiteOpenHelper {
     public static final String DATABASE_NAME = "bidmarket.db";
-    public static final int DATABASE_VERSION = 2;
+    public static final int DATABASE_VERSION = 3;
 
     public BidMarketDbHelper(Context context) { super(context, DATABASE_NAME, null, DATABASE_VERSION); }
 
@@ -24,6 +24,7 @@ public class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE TABLE imagenes (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE, image_url TEXT NOT NULL UNIQUE, display_order INTEGER NOT NULL, UNIQUE(publicacion_id,display_order))");
         db.execSQL("CREATE TABLE favoritos (usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE, save_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(usuario_id,publicacion_id))");
         createNewTables(db);
+        createChatTables(db);
         db.execSQL("CREATE INDEX idx_publicaciones_categoria ON publicaciones(categoria_id)");
         db.execSQL("CREATE INDEX idx_publicaciones_vendedor ON publicaciones(vendedor_id)");
         insertCategorias(db);
@@ -35,6 +36,14 @@ public class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL("CREATE INDEX IF NOT EXISTS idx_pujas_subasta ON pujas(subasta_id,monto DESC,id DESC)");
         db.execSQL("CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL UNIQUE REFERENCES publicaciones(id), comprador_id INTEGER NOT NULL REFERENCES usuarios(id), vendedor_id INTEGER NOT NULL REFERENCES usuarios(id), precio_acordado REAL NOT NULL CHECK(precio_acordado > 0), fecha_ms INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'CONFIRMADA' CHECK(status IN ('CONFIRMADA','CANCELADA'))) ");
         db.execSQL("CREATE TABLE IF NOT EXISTS notificaciones (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, mensaje TEXT NOT NULL, leida INTEGER NOT NULL DEFAULT 0 CHECK(leida IN (0,1)), fecha_ms INTEGER NOT NULL)");
+    }
+
+    private void createChatTables(SQLiteDatabase db) {
+        db.execSQL("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id), comprador_id INTEGER NOT NULL REFERENCES usuarios(id), vendedor_id INTEGER NOT NULL REFERENCES usuarios(id), creado_ms INTEGER NOT NULL, UNIQUE(publicacion_id,comprador_id), CHECK(comprador_id <> vendedor_id))");
+        db.execSQL("CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, remitente_id INTEGER NOT NULL REFERENCES usuarios(id), texto TEXT NOT NULL CHECK(length(trim(texto)) > 0), enviado_ms INTEGER NOT NULL, leido INTEGER NOT NULL DEFAULT 0 CHECK(leido IN (0,1)))");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_mensajes_chat ON mensajes(chat_id,id)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_chats_comprador ON chats(comprador_id)");
+        db.execSQL("CREATE INDEX IF NOT EXISTS idx_chats_vendedor ON chats(vendedor_id)");
     }
 
     private void insertCategorias(SQLiteDatabase db) {
@@ -49,6 +58,7 @@ public class BidMarketDbHelper extends SQLiteOpenHelper {
             createNewTables(db);
             insertCategorias(db);
         }
+        if (oldVersion < 3) createChatTables(db);
     }
 
     public boolean existeColumna(SQLiteDatabase db, String tabla, String columna) {
