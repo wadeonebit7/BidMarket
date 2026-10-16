@@ -11,6 +11,12 @@ import java.io.File;
 import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
+import androidx.core.graphics.Insets;
+import android.view.View;
+import android.graphics.Color;
 
 public class DetallePublicacionActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -21,6 +27,45 @@ public class DetallePublicacionActivity extends AppCompatActivity {
     private String titulo;
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);setContentView(R.layout.activity_detalle_publicacion);
+        // Permite que el fondo ocupe toda la pantalla.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        // Barras del sistema transparentes.
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+
+        // Iconos claros para contrastar con el fondo oscuro.
+        WindowCompat.getInsetsController(getWindow(),
+                        getWindow().getDecorView())
+                .setAppearanceLightStatusBars(false);
+
+        WindowCompat.getInsetsController(getWindow(),
+                        getWindow().getDecorView())
+                .setAppearanceLightNavigationBars(false);
+
+        // Evita que el contenido se superponga
+        // con la barra de estado y de navegación.
+        View root = findViewById(R.id.detalleRoot);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, windowInsets) -> {
+
+            Insets barras = windowInsets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+            );
+
+            v.setPadding(
+                    barras.left,
+                    barras.top,
+                    barras.right,
+                    barras.bottom
+            );
+
+            return windowInsets;
+        });
+
+        ViewCompat.requestApplyInsets(root);
+
         repo=new PublicacionRepository(this);pubId=getIntent().getLongExtra("publicacion_id",-1);
         usuarioId=getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1);
         if(pubId<=0||usuarioId<=0){finish();return;}
