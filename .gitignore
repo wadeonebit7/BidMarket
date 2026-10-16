@@ -14,3 +14,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Credential overrides
+local.properties
+keystore.properties
+*.jks

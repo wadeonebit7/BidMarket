@@ -52,6 +52,13 @@
             android:inputType="textCapWords"
             android:layout_marginBottom="12dp"/>
 
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Categoría" />
+        <Spinner android:id="@+id/spinnerCategoria" android:layout_width="match_parent" android:layout_height="48dp" />
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="Modalidad" />
+        <Spinner android:id="@+id/spinnerModalidad" android:layout_width="match_parent" android:layout_height="48dp" />
+        <Button android:id="@+id/btnFechaFin" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Elegir fecha de término" android:visibility="gone" />
+
+        <Button android:id="@+id/btnUsarGps" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="Añadir coordenadas GPS" />
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
