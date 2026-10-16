@@ -4,96 +4,41 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.Toast;
-import androidx.activity.EdgeToEdge;
+import android.util.Patterns;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class RegisterActivity extends AppCompatActivity {
-
-    private EditText etNombre, etUsername, etEmail, etPassword, etRepetirPassword;
-    private CheckBox cbTerminos;
-    private Button btnRegistrarse;
-    private BidMarketDbHelper dbHelper;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_register);
-
-        dbHelper = new BidMarketDbHelper(this);
-
-        // Enlazar vistas (Asegúrate de que los IDs coincidan con tu activity_register.xml)
-        etNombre = findViewById(R.id.etNombre);
-        etUsername = findViewById(R.id.etUsername);
-        etEmail = findViewById(R.id.etEmail);
-        etPassword = findViewById(R.id.etPassword);
-        etRepetirPassword = findViewById(R.id.etRepetirPassword);
-        cbTerminos = findViewById(R.id.cbTerminos);
-        btnRegistrarse = findViewById(R.id.btnRegistrarse);
-
-        btnRegistrarse.setOnClickListener(v -> registrarUsuario());
+    private final ExecutorService io=Executors.newSingleThreadExecutor();
+    private EditText nombre,usuario,correo,pass,confirmacion;private CheckBox terminos;private Button boton;
+    @Override protected void onCreate(Bundle state){super.onCreate(state);setContentView(R.layout.activity_register);
+        nombre=findViewById(R.id.etNombre);usuario=findViewById(R.id.etUsername);correo=findViewById(R.id.etEmail);
+        pass=findViewById(R.id.etPassword);confirmacion=findViewById(R.id.etRepetirPassword);
+        terminos=findViewById(R.id.cbTerminos);boton=findViewById(R.id.btnRegistrarse);
+        boton.setOnClickListener(v->registrar());
     }
-
-    private void registrarUsuario() {
-        String nombre = etNombre.getText().toString().trim();
-        String username = etUsername.getText().toString().trim();
-        String email = etEmail.getText().toString().trim();
-        String password = etPassword.getText().toString();
-        String repetirPassword = etRepetirPassword.getText().toString();
-
-        // Validaciones basadas en la interfaz de la imagen aportada
-        if (nombre.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Por favor, completa todos los campos", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!password.equals(repetirPassword)) {
-            Toast.makeText(this, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (!cbTerminos.isChecked()) {
-            Toast.makeText(this, "Debes aceptar los términos y condiciones", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-
-        // 1. Insertar en la tabla 'cuentas'
-        ContentValues cuentaValues = new ContentValues();
-        cuentaValues.put("name", nombre);
-        cuentaValues.put("user_name", username);
-        cuentaValues.put("email", email);
-        cuentaValues.put("password_hash", SecurityUtils.hashPassword(password));
-
-        long cuentaId = db.insert("cuentas", null, cuentaValues);
-
-        if (cuentaId != -1) {
-            // 2. Insertar en la tabla 'usuarios' vinculando el ID de la cuenta
-            ContentValues usuarioValues = new ContentValues();
-            usuarioValues.put("cuentas_id", cuentaId);
-            usuarioValues.put("name", nombre);
-            usuarioValues.put("user_name", username);
-
-            long usuarioId = db.insert("usuarios", null, usuarioValues);
-
-            if (usuarioId != -1) {
-                Toast.makeText(this, "Registro exitoso", Toast.LENGTH_SHORT).show();
-                // Navegar de regreso al Login mediante Intent
-                Intent intent = new Intent(RegisterActivity.this, LoginActivity.class);
-                startActivity(intent);
-                finish();
-            } else {
-                Toast.makeText(this, "Error al crear el perfil de usuario", Toast.LENGTH_SHORT).show();
-            }
-        } else {
-            Toast.makeText(this, "Error en el registro. El correo o usuario podría ya existir.", Toast.LENGTH_SHORT).show();
-        }
+    private void registrar(){
+        String n=nombre.getText().toString().trim(),u=usuario.getText().toString().trim(),e=correo.getText().toString().trim(),p=pass.getText().toString(),q=confirmacion.getText().toString();
+        if(n.isEmpty()||u.isEmpty()||!Patterns.EMAIL_ADDRESS.matcher(e).matches()){mensaje("Completa nombre, usuario y correo válido");return;}
+        if(p.length()<8||!p.equals(q)){mensaje("Contraseña: mínimo 8 caracteres y confirmación igual");return;}
+        if(!terminos.isChecked()){mensaje("Acepta los términos para continuar");return;}
+        boton.setEnabled(false);
+        io.execute(()->{
+            SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();boolean ok=false;
+            db.beginTransaction();
+            try{
+                ContentValues c=new ContentValues();c.put("name",n);c.put("user_name",u);c.put("email",e);c.put("password_hash",SecurityUtils.hashPassword(p));
+                long cuenta=db.insertOrThrow("cuentas",null,c);
+                ContentValues profile=new ContentValues();profile.put("cuentas_id",cuenta);profile.put("name",n);profile.put("user_name",u);
+                db.insertOrThrow("usuarios",null,profile);
+                db.setTransactionSuccessful();ok=true;
+            }catch(Exception ex){android.util.Log.w("BidMarket","Fallo de registro",ex);}finally{db.endTransaction();}
+            boolean resultado=ok;
+            runOnUiThread(()->{boton.setEnabled(true);if(resultado){mensaje("Cuenta creada");startActivity(new Intent(this,LoginActivity.class));finish();}else mensaje("No se pudo registrar. Verifica que el correo y usuario no existan.");});
+        });
     }
+    private void mensaje(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
+    @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }

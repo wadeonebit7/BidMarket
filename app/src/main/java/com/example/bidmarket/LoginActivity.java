@@ -1,119 +1,44 @@
 package com.example.bidmarket;
 
+import android.content.ContentValues;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class LoginActivity extends AppCompatActivity {
-
-    private EditText etCorreoLogin, etPasswordLogin;
-    private Button btnIngresar;
-    private BidMarketDbHelper dbHelper;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        // 1. VERIFICAR SESIÓN ACTIVA ANTES DE CARGAR LA INTERFAZ
-        SharedPreferences prefs = getSharedPreferences("MisPreferencias", MODE_PRIVATE);
-        int usuarioId = prefs.getInt("usuario_id", -1);
-
-        if (usuarioId != -1) {
-            // El usuario ya tiene sesión. Redirigir al Dashboard.
-            irAlDashboard();
-            return; // Detenemos la ejecución del onCreate aquí
-        }
-
-        // Si no hay sesión, cargamos la interfaz de Login de forma normal
-        // Evita captura de pantalla en miniatura multitarea para proteger las contraseñas
-        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE, android.view.WindowManager.LayoutParams.FLAG_SECURE);
-
+    private final ExecutorService io=Executors.newSingleThreadExecutor();
+    private EditText correo,contrasena;private Button ingresar;
+    @Override protected void onCreate(Bundle state){super.onCreate(state);
+        if(getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1)>0){abrir();return;}
+        getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,android.view.WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_login);
-
-        dbHelper = new BidMarketDbHelper(this);
-
-        etCorreoLogin = findViewById(R.id.etCorreoLogin);
-        etPasswordLogin = findViewById(R.id.etPasswordLogin);
-        btnIngresar = findViewById(R.id.btnIngresar);
-
-        btnIngresar.setOnClickListener(v -> iniciarSesion());
+        correo=findViewById(R.id.etCorreoLogin);contrasena=findViewById(R.id.etPasswordLogin);ingresar=findViewById(R.id.btnIngresar);
+        ingresar.setOnClickListener(v->login());
     }
-
-    private void iniciarSesion() {
-        String email = etCorreoLogin.getText().toString().trim();
-        String password = etPasswordLogin.getText().toString();
-
-        if (email.isEmpty() || password.isEmpty()) {
-            Toast.makeText(this, "Ingresa tu correo y contraseña", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        SQLiteDatabase db = dbHelper.getReadableDatabase();
-        String passwordHash = SecurityUtils.hashPassword(password);
-
-        // Consultar la tabla cuentas para verificar credenciales
-        String[] columnas = {"id", "status"};
-        String seleccion = "email = ? AND password_hash = ?";
-        String[] argumentos = {email, passwordHash};
-
-        Cursor cursor = db.query("cuentas", columnas, seleccion, argumentos, null, null, null);
-
-        if (cursor != null && cursor.moveToFirst()) {
-            // Se encontró la cuenta
-            int indexStatus = cursor.getColumnIndex("status");
-            int indexId = cursor.getColumnIndex("id");
-
-            String status = cursor.getString(indexStatus);
-            int cuentaId = cursor.getInt(indexId); // ID de la tabla cuentas
-
-            if ("ACTIVE".equals(status)) {
-                // Buscar el ID del usuario asociado a esta cuenta en la tabla 'usuarios'
-                Cursor cursorUsuario = db.query("usuarios", new String[]{"id"}, "cuentas_id = ?",
-                        new String[]{String.valueOf(cuentaId)}, null, null, null);
-
-                if (cursorUsuario != null && cursorUsuario.moveToFirst()) {
-                    int usuarioId = cursorUsuario.getInt(0); // ID de la tabla usuarios
-
-                    // Guardar el usuarioId en SharedPreferences
-                    getSharedPreferences("MisPreferencias", MODE_PRIVATE)
-                            .edit()
-                            .putInt("usuario_id", usuarioId)
-                            .apply();
-
-                    cursorUsuario.close();
-
-                    Toast.makeText(this, "¡Bienvenido a BidMarket!", Toast.LENGTH_SHORT).show();
-
-                    // Redirigir al Dashboard
-                    Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
-                    startActivity(intent);
-                    finish();
-                } else {
-                    Toast.makeText(this, "Error: Perfil de usuario no encontrado.", Toast.LENGTH_SHORT).show();
+    private void login(){String email=correo.getText().toString().trim(),pass=contrasena.getText().toString();
+        if(email.isEmpty()||pass.isEmpty()){mensaje("Ingresa correo y contraseña");return;}
+        ingresar.setEnabled(false);
+        io.execute(()->{
+            int id=-1;String error="Credenciales incorrectas";
+            try{
+                SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();
+                try(Cursor c=db.rawQuery("SELECT u.id,c.id,c.password_hash,c.status FROM cuentas c JOIN usuarios u ON u.cuentas_id=c.id WHERE c.email=? COLLATE NOCASE",new String[]{email})){
+                    if(c.moveToFirst() && "ACTIVE".equals(c.getString(3)) && SecurityUtils.verificar(pass,c.getString(2))){
+                        id=c.getInt(0);
+                        if(SecurityUtils.requiereMigracion(c.getString(2))){ContentValues v=new ContentValues();v.put("password_hash",SecurityUtils.hashPassword(pass));db.update("cuentas",v,"id=?",new String[]{""+c.getLong(1)});}
+                    }
                 }
-
-            } else {
-                Toast.makeText(this, "Tu cuenta no está activa. Estado: " + status, Toast.LENGTH_LONG).show();
-            }
-            cursor.close();
-        } else {
-            Toast.makeText(this, "Credenciales incorrectas", Toast.LENGTH_SHORT).show();
-            if (cursor != null) cursor.close();
-        }
+            }catch(Exception e){error="No se pudo consultar la cuenta";}
+            final int user=id;final String mensajeError=error;
+            runOnUiThread(()->{ingresar.setEnabled(true);if(user>0){getSharedPreferences("MisPreferencias",MODE_PRIVATE).edit().putInt("usuario_id",user).apply();abrir();}else mensaje(mensajeError);});
+        });
     }
-
-    // Método auxiliar para manejar la navegación y limpiar la pila de actividades
-    private void irAlDashboard() {
-        Intent intent = new Intent(LoginActivity.this, DashboardActivity.class);
-        // Estas dos banderas eliminan el LoginActivity y cualquier otra pantalla previa de la memoria
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-        startActivity(intent);
-        finish();
-    }
+    private void abrir(){Intent i=new Intent(this,DashboardActivity.class);i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);startActivity(i);finish();}
+    private void mensaje(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
+    @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }
