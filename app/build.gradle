@@ -2,6 +2,20 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+def localProps = new Properties()
+def localFile = rootProject.file("local.properties")
+
+if (localFile.exists()) {
+    localFile.withInputStream { localProps.load(it) }
+}
+
+def mapsApiKey = localProps.getProperty(
+        "MAPS_API_KEY",
+        providers.gradleProperty("MAPS_API_KEY")
+                .orElse("YOUR_MAPS_API_KEY")
+                .get()
+)
+
 android {
     namespace 'com.example.bidmarket'
     compileSdk {
@@ -9,6 +23,7 @@ android {
     }
 
     defaultConfig {
+        manifestPlaceholders = [MAPS_API_KEY: mapsApiKey]
         applicationId "com.example.bidmarket"
         minSdk 30
         targetSdk 37
@@ -32,6 +47,10 @@ android {
 }
 
 dependencies {
+    implementation "androidx.recyclerview:recyclerview:1.4.0"
+    implementation "androidx.cardview:cardview:1.0.0"
+    implementation "com.google.android.gms:play-services-maps:19.2.0"
+    implementation "com.google.android.gms:play-services-location:21.3.0"
     implementation libs.activity.ktx
     implementation libs.appcompat
     implementation libs.constraintlayout
