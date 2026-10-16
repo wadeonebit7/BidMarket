@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:fillViewport="true" android:background="#171E29">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:orientation="vertical" android:padding="20dp">
+        <TextView android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:text="Fotografías del producto" android:textSize="24sp" android:textStyle="bold"
+            android:textColor="#FFFFFF" />
+        <TextView android:id="@+id/contadorFotos" android:layout_width="match_parent" android:layout_height="wrap_content"
+            android:layout_marginTop="8dp" android:layout_marginBottom="12dp" android:textColor="#B6C2D2" />
+        <Button android:id="@+id/btnFotosGaleria" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="Seleccionar de galería" android:textAllCaps="false"/>
+        <Button android:id="@+id/btnFotosCamara" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:text="Tomar fotografía" android:textAllCaps="false"/>
+        <LinearLayout android:id="@+id/listaFotos" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:orientation="vertical"/>
+        <Button android:id="@+id/btnFotosListas" android:layout_width="match_parent"
+            android:layout_height="wrap_content" android:layout_marginTop="20dp"
+            android:text="Usar estas fotografías" android:textAllCaps="false"/>
+    </LinearLayout>
+</ScrollView>
