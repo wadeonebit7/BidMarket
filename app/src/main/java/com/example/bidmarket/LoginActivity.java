@@ -12,6 +12,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.graphics.Color;
+import android.view.View;
+
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 public class LoginActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -20,11 +27,42 @@ public class LoginActivity extends AppCompatActivity {
         if(getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1)>0){abrir();return;}
         getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,android.view.WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_login);
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
+
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+
+        getWindow().setStatusBarColor(Color.TRANSPARENT);
+        getWindow().setNavigationBarColor(Color.TRANSPARENT);
+
+        WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightStatusBars(true);
+
+        WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightNavigationBars(true);
+
+        View root = findViewById(R.id.main);
+
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets barras = insets.getInsets(
+                    WindowInsetsCompat.Type.systemBars()
+                            | WindowInsetsCompat.Type.displayCutout()
+            );
+
+            v.setPadding(
+                    barras.left,
+                    barras.top,
+                    barras.right,
+                    barras.bottom
+            );
+
             return insets;
         });
+
+        ViewCompat.requestApplyInsets(root);
+
         correo=findViewById(R.id.etCorreoLogin);contrasena=findViewById(R.id.etPasswordLogin);ingresar=findViewById(R.id.btnIngresar);
         ingresar.setOnClickListener(v->login());
     }
