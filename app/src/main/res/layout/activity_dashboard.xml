@@ -7,17 +7,28 @@
     android:layout_height="match_parent"
     android:background="#F7F8FA">
 
+    <!-- Encabezado -->
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/topAppBar"
         android:layout_width="0dp"
-        android:layout_height="?attr/actionBarSize"
-        android:background="#202936"
+        android:layout_height="56dp"
+        android:background="#F7F8FA"
         app:title="BidMarket+"
-        app:titleTextColor="#FFFFFF"
+        app:titleTextColor="#202936"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <View
+        android:id="@+id/divisorSuperior"
+        android:layout_width="0dp"
+        android:layout_height="1dp"
+        android:background="#E5E9EE"
+        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Título del catálogo -->
     <TextView
         android:id="@+id/tvTituloDashboard"
         android:layout_width="0dp"
@@ -28,9 +39,8 @@
         android:text="Explora publicaciones"
         android:textColor="#202936"
         android:textSize="23sp"
-        android:fontFamily="sans"
         android:textStyle="bold"
-        app:layout_constraintTop_toBottomOf="@id/topAppBar"
+        app:layout_constraintTop_toBottomOf="@id/divisorSuperior"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
@@ -39,42 +49,77 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="20dp"
+        android:layout_marginTop="5dp"
         android:layout_marginEnd="20dp"
-        android:layout_marginTop="4dp"
         android:text="Encuentra algo especial para ti"
-        android:textColor="#748091"
+        android:textColor="#718096"
         android:textSize="13sp"
         app:layout_constraintTop_toBottomOf="@id/tvTituloDashboard"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
+    <!-- Catálogo de publicaciones -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvPublicaciones"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="14dp"
-        android:paddingStart="10dp"
-        android:paddingEnd="10dp"
-        android:paddingBottom="12dp"
+        android:layout_marginTop="16dp"
+        android:paddingStart="9dp"
+        android:paddingEnd="9dp"
+        android:paddingBottom="16dp"
         android:clipToPadding="false"
-        android:scrollbars="vertical"
+        android:scrollbars="none"
         app:layout_constraintTop_toBottomOf="@id/tvSubtituloDashboard"
-        app:layout_constraintBottom_toTopOf="@id/fabAgregarPublicacion"
+        app:layout_constraintBottom_toTopOf="@id/barraInferior"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
-        android:id="@+id/fabAgregarPublicacion"
-        android:layout_width="wrap_content"
+    <!-- Barra inferior -->
+    <LinearLayout
+        android:id="@+id/barraInferior"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="16dp"
-        android:text="Publicar producto"
-        android:textColor="#FFFFFF"
-        android:contentDescription="Crear una nueva publicación"
-        app:icon="@android:drawable/ic_input_add"
-        app:iconTint="#FFFFFF"
-        app:backgroundTint="#202936"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:background="#FFFFFF"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnMisChats"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginEnd="6dp"
+            android:text="Chats"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textColor="#202936"
+            app:backgroundTint="#FFFFFF"
+            app:strokeColor="#D9E1E8"
+            app:strokeWidth="1dp"
+            app:cornerRadius="12dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/fabAgregarPublicacion"
+            android:layout_width="0dp"
+            android:layout_height="52dp"
+            android:layout_weight="1"
+            android:layout_marginStart="6dp"
+            android:text="+ Publicar"
+            android:textAllCaps="false"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            app:backgroundTint="#202936"
+            app:cornerRadius="12dp" />
+
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
