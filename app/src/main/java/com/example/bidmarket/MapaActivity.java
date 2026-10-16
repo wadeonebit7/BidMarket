@@ -34,6 +34,51 @@ public class MapaActivity extends AppCompatActivity implements SensorEventListen
     private final ActivityResultLauncher<String> permiso=registerForActivityResult(new ActivityResultContracts.RequestPermission(),ok->{if(ok)ubicar();else aviso("Sin permiso, se muestra solamente el mapa");});
     @Override protected void onCreate(Bundle b){
         super.onCreate(b);setContentView(R.layout.activity_mapa);
+
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(
+                getWindow(), false
+        );
+
+        getWindow().setStatusBarColor(
+                android.graphics.Color.TRANSPARENT
+        );
+
+        getWindow().setNavigationBarColor(
+                android.graphics.Color.TRANSPARENT
+        );
+
+        androidx.core.view.WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightStatusBars(true);
+
+        androidx.core.view.WindowCompat.getInsetsController(
+                getWindow(),
+                getWindow().getDecorView()
+        ).setAppearanceLightNavigationBars(true);
+
+        android.view.View root = findViewById(R.id.main);
+
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(
+                root, (v, insets) -> {
+
+                    androidx.core.graphics.Insets barras = insets.getInsets(
+                            androidx.core.view.WindowInsetsCompat.Type.systemBars()
+                                    | androidx.core.view.WindowInsetsCompat.Type.displayCutout()
+                    );
+
+                    v.setPadding(
+                            barras.left,
+                            barras.top,
+                            barras.right,
+                            barras.bottom
+                    );
+
+                    return insets;
+                });
+
+        androidx.core.view.ViewCompat.requestApplyInsets(root);
+
         fused=LocationServices.getFusedLocationProviderClient(this);
         lecturaSensor=findViewById(R.id.lecturaSensor);
         sensores=(SensorManager)getSystemService(SENSOR_SERVICE);

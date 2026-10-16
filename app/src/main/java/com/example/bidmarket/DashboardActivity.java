@@ -90,7 +90,6 @@ public class DashboardActivity extends AppCompatActivity {
     });}
     @Override public boolean onCreateOptionsMenu(Menu menu){getMenuInflater().inflate(R.menu.menu_dashboard,menu);return true;}
     @Override public boolean onOptionsItemSelected(MenuItem item){
-        if(item.getItemId()==R.id.action_chats){startActivity(new Intent(this,HistorialChatsActivity.class));return true;}
         if(item.getItemId()==R.id.action_notificaciones){startActivity(new Intent(this,NotificacionesActivity.class));return true;}
         if(item.getItemId()==R.id.action_logout){
         getSharedPreferences("MisPreferencias",MODE_PRIVATE).edit().clear().apply();
