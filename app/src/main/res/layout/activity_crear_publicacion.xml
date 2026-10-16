@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#F7F8FA"
+    android:fillViewport="true"
+    android:clipToPadding="false"
+    android:scrollbars="none">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="28dp"
+        android:paddingBottom="36dp">
+
+        <!-- ENCABEZADO -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="BidMarket+"
+            android:textColor="#64748B"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="Crear publicación"
+            android:textColor="#202936"
+            android:textSize="28sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="32dp"
+            android:text="Completa los detalles de tu producto."
+            android:textColor="#718096"
+            android:textSize="14sp" />
+
+        <!-- INFORMACIÓN -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Información del producto"
+            android:textColor="#202936"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="22dp"
+            android:background="#DFE5EC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Título del producto"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etTituloPub"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="16dp"
+            android:hint="Ej. Bicicleta urbana"
+            android:inputType="textCapSentences"
+            android:singleLine="true"
+            android:textColor="#202936"
+            android:textColorHint="#94A3B8"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Descripción"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etDescripcionPub"
+            android:layout_width="match_parent"
+            android:layout_height="120dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:padding="16dp"
+            android:hint="Describe las características del producto"
+            android:inputType="textMultiLine|textCapSentences"
+            android:gravity="top|start"
+            android:textColor="#202936"
+            android:textColorHint="#94A3B8"
+            android:textSize="15sp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Precio (CLP)"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etPrecioPub"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="16dp"
+            android:hint="Ej. 45000"
+            android:inputType="numberDecimal"
+            android:singleLine="true"
+            android:textColor="#202936"
+            android:textColorHint="#94A3B8"
+            android:textSize="15sp" />
+
+        <!-- CATEGORÍA Y VENTA -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:text="Categoría y venta"
+            android:textColor="#202936"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="22dp"
+            android:background="#DFE5EC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Categoría"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerCategoria"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="20dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="12dp"
+            android:spinnerMode="dropdown" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Modalidad de venta"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerModalidad"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="12dp"
+            android:spinnerMode="dropdown" />
+
+        <!-- Solo aparece al elegir subasta -->
+        <Button
+            android:id="@+id/btnFechaFin"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:layout_marginBottom="20dp"
+            android:text="Elegir fecha de término"
+            android:textAllCaps="false"
+            android:textColor="#202936"
+            android:backgroundTint="#E8EEF3"
+            android:visibility="gone" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Condición del producto"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <Spinner
+            android:id="@+id/spinnerCondicion"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="12dp"
+            android:spinnerMode="dropdown" />
+
+        <!-- UBICACIÓN -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:text="Ubicación"
+            android:textColor="#202936"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="22dp"
+            android:background="#DFE5EC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Ciudad o comuna"
+            android:textColor="#344256"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/etUbicacionPub"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="14dp"
+            android:background="@drawable/bidmarket_ui_input"
+            android:paddingHorizontal="16dp"
+            android:hint="Ej. Iquique"
+            android:inputType="textCapWords"
+            android:singleLine="true"
+            android:textColor="#202936"
+            android:textColorHint="#94A3B8"
+            android:textSize="15sp" />
+
+        <Button
+            android:id="@+id/btnUsarGps"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Usar mi ubicación GPS"
+            android:textAllCaps="false"
+            android:textColor="#202936"
+            android:backgroundTint="#E8EEF3" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="Puedes agregar coordenadas o indicar tu ciudad."
+            android:textColor="#718096"
+            android:textSize="12sp" />
+
+        <!-- FOTOGRAFÍAS -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="36dp"
+            android:text="Fotografías"
+            android:textColor="#202936"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="20dp"
+            android:background="#DFE5EC" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="14dp"
+            android:text="Agrega entre 1 y 10 fotografías. La primera será la portada."
+            android:textColor="#718096"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btnSeleccionarImagen"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="Administrar fotografías"
+            android:textAllCaps="false"
+            android:textColor="#202936"
+            android:backgroundTint="#E8EEF3" />
+
+        <ImageView
+            android:id="@+id/ivVistaPrevia"
+            android:layout_width="match_parent"
+            android:layout_height="220dp"
+            android:layout_marginTop="14dp"
+            android:background="#EDF0F4"
+            android:padding="12dp"
+            android:scaleType="fitCenter"
+            android:contentDescription="Vista previa de la portada" />
+
+        <!-- PUBLICAR -->
+        <Button
+            android:id="@+id/btnPublicar"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="36dp"
+            android:text="Publicar producto"
+            android:textAllCaps="false"
+            android:textColor="#FFFFFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:backgroundTint="#202936" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="Revisa la información antes de publicar."
+            android:gravity="center"
+            android:textColor="#718096"
+            android:textSize="12sp" />
+
+    </LinearLayout>
+
+</ScrollView>
