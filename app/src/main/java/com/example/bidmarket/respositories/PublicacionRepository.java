@@ -1,10 +1,12 @@
-package com.example.bidmarket;
+package com.example.bidmarket.respositories;
 
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import com.example.bidmarket.Models.Publicacion;
+
+import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.models.Publicacion;
 import java.util.ArrayList;
 import java.util.List;
 

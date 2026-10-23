@@ -1,4 +1,4 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.content.ContentValues;
 import android.content.Intent;
@@ -15,10 +15,11 @@ import java.util.concurrent.Executors;
 import android.graphics.Color;
 import android.view.View;
 
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
+
+import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.R;
+import com.example.bidmarket.utils.SecurityUtils;
 
 public class LoginActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();

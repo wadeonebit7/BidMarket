@@ -1,8 +1,12 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
 import androidx.core.content.ContextCompat;
+
+import com.example.bidmarket.respositories.ImagenesRepository;
+import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.R;
 import com.google.android.gms.location.LocationServices;
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
 import android.app.DatePickerDialog;
@@ -24,11 +28,7 @@ import android.graphics.Color;
 import android.view.View;
 
 import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
-
-import android.view.View;
 
 public class CrearPublicacionActivity extends AppCompatActivity {
     private EditText titulo,descripcion,precio,ubicacion;

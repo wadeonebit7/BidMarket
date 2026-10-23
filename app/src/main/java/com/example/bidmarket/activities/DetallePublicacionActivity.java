@@ -1,4 +1,4 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.content.Intent;
 import android.database.Cursor;
@@ -15,8 +15,13 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.graphics.Insets;
-import android.view.View;
+
 import android.graphics.Color;
+
+import com.example.bidmarket.respositories.ChatRepository;
+import com.example.bidmarket.respositories.ImagenesRepository;
+import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.R;
 
 public class DetallePublicacionActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();

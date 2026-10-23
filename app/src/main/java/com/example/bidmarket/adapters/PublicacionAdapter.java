@@ -1,6 +1,7 @@
-package com.example.bidmarket;
+package com.example.bidmarket.adapters;
 
-import com.example.bidmarket.Models.Publicacion;
+import com.example.bidmarket.R;
+import com.example.bidmarket.models.Publicacion;
 import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;

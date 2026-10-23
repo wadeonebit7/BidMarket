@@ -1,4 +1,4 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.content.ContentValues;
 import android.content.Intent;
@@ -10,6 +10,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+
+import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.R;
+import com.example.bidmarket.utils.SecurityUtils;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -37,7 +42,7 @@ public class RegisterActivity extends AppCompatActivity {
             SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();boolean ok=false;
             db.beginTransaction();
             try{
-                ContentValues c=new ContentValues();c.put("name",n);c.put("user_name",u);c.put("email",e);c.put("password_hash",SecurityUtils.hashPassword(p));
+                ContentValues c=new ContentValues();c.put("name",n);c.put("user_name",u);c.put("email",e);c.put("password_hash", SecurityUtils.hashPassword(p));
                 long cuenta=db.insertOrThrow("cuentas",null,c);
                 ContentValues profile=new ContentValues();profile.put("cuentas_id",cuenta);profile.put("name",n);profile.put("user_name",u);
                 db.insertOrThrow("usuarios",null,profile);

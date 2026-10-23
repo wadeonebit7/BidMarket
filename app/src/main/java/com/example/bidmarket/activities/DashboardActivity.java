@@ -1,6 +1,9 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
-import com.example.bidmarket.Models.Publicacion;
+import com.example.bidmarket.adapters.PublicacionAdapter;
+import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.R;
+import com.example.bidmarket.models.Publicacion;
 import android.os.Bundle;
 import android.content.Intent;
 import android.view.Menu;
@@ -13,18 +16,14 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
-import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.graphics.Color;
-import android.content.Intent;
+
 import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
-import androidx.core.view.WindowInsetsCompat;
 
 public class DashboardActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();

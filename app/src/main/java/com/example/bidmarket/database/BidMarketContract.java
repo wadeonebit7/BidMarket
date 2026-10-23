@@ -1,4 +1,4 @@
-package com.example.bidmarket;
+package com.example.bidmarket.database;
 
 import android.provider.BaseColumns;
 

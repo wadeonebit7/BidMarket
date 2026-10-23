@@ -1,4 +1,4 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -7,6 +7,9 @@ import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.example.bidmarket.database.BidMarketDbHelper;
+
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

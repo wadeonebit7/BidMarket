@@ -1,4 +1,4 @@
-package com.example.bidmarket.Models;
+package com.example.bidmarket.models;
 
 public class Publicacion {
     private int id;
