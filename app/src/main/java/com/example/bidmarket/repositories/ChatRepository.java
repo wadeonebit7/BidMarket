@@ -6,109 +6,589 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.database.BidMarketContract.Chats;
+import com.example.bidmarket.database.BidMarketContract.Mensajes;
+import com.example.bidmarket.database.BidMarketContract.Publicaciones;
+import com.example.bidmarket.database.BidMarketContract.Subastas;
+import com.example.bidmarket.database.BidMarketContract.Usuarios;
 
 import java.util.ArrayList;
 import java.util.List;
 
-/** Chats locales: solo usuarios de este dispositivo. No implementa red ni tiempo real. */
-public class ChatRepository {
-    private final BidMarketDbHelper helper;
-    public ChatRepository(Context ctx) { helper = new BidMarketDbHelper(ctx.getApplicationContext()); }
+/**
+ * Repositorio de conversaciones y mensajes locales.
+ *
+ * Centraliza el acceso a SQLite y las validaciones
+ * necesarias para iniciar y utilizar conversaciones.
+ *
+ * No implementa comunicación por Internet ni tiempo real.
+ */
+public final class ChatRepository {
 
-    public static class Entrada {
-        public final long id;
-        public final String titulo, interlocutor, ultimo;
-        public Entrada(long id,String titulo,String interlocutor,String ultimo) {this.id=id;this.titulo=titulo;this.interlocutor=interlocutor;this.ultimo=ultimo;}
+    private static final int MAX_LONGITUD_MENSAJE = 2000;
+
+    private final BidMarketDbHelper helper;
+
+    public ChatRepository(Context context) {
+        helper = new BidMarketDbHelper(
+                context.getApplicationContext()
+        );
     }
-    public static class Mensaje {
+
+    // =====================================================
+    // MODELOS DE RESULTADO
+    // =====================================================
+
+    public static final class Entrada {
+
+        public final long id;
+        public final String titulo;
+        public final String interlocutor;
+        public final String ultimo;
+
+        public Entrada(
+                long id,
+                String titulo,
+                String interlocutor,
+                String ultimo
+        ) {
+            this.id = id;
+            this.titulo = titulo;
+            this.interlocutor = interlocutor;
+            this.ultimo = ultimo;
+        }
+    }
+
+    public static final class Mensaje {
+
         public final long id;
         public final int autor;
         public final String texto;
-        public Mensaje(long id,int autor,String texto){this.id=id;this.autor=autor;this.texto=texto;}
+
+        public Mensaje(long id, int autor, String texto) {
+            this.id = id;
+            this.autor = autor;
+            this.texto = texto;
+        }
     }
 
-    /** Comprueba reglas de acceso desde la BD, nunca solo desde la UI. */
-    private void validarInicio(SQLiteDatabase db,long publicacionId,int solicitante) {
-        String sql="SELECT p.vendedor_id,p.modalidad,p.status,s.fin_ms,s.status " +
-                "FROM publicaciones p LEFT JOIN subastas s ON s.publicacion_id=p.id WHERE p.id=?";
-        try(Cursor c=db.rawQuery(sql,new String[]{String.valueOf(publicacionId)})) {
-            if(!c.moveToFirst()) throw new IllegalArgumentException("Publicación inexistente");
-            if(c.getInt(0)==solicitante) throw new IllegalArgumentException("No puedes escribirte a ti mismo");
-            String modo=c.getString(1), estado=c.getString(2);
-            if("Borrado".equals(estado)) throw new IllegalArgumentException("Publicación eliminada");
-            if("SUBASTA".equals(modo)) {
-                if(c.isNull(3)||System.currentTimeMillis()<c.getLong(3)||"CANCELADA".equals(c.getString(4)))
-                    throw new IllegalArgumentException("El chat estará disponible cuando finalice la subasta");
-            } else if(!"Activo".equals(estado) && !"Vendido".equals(estado)) {
-                throw new IllegalArgumentException("La publicación no permite nuevas conversaciones");
+    // =====================================================
+    // VALIDAR INICIO DE CONVERSACIÓN
+    // =====================================================
+
+    /**
+     * Comprueba las restricciones de la publicación
+     * antes de permitir una nueva conversación.
+     *
+     * Se valida desde SQLite y no únicamente desde la UI.
+     */
+    private void validarInicio(
+            SQLiteDatabase db,
+            long publicacionId,
+            int solicitante
+    ) {
+
+        String sql =
+                "SELECT " +
+                        "p." + Publicaciones.VENDEDOR_ID + ", " +
+                        "p." + Publicaciones.MODALIDAD + ", " +
+                        "p." + Publicaciones.STATUS + ", " +
+                        "s." + Subastas.FIN + ", " +
+                        "s." + Subastas.STATUS + " " +
+
+                        "FROM " + Publicaciones.TABLE + " p " +
+
+                        "LEFT JOIN " + Subastas.TABLE + " s " +
+                        "ON s." + Subastas.PUBLICACION_ID +
+                        " = p." + Publicaciones.ID + " " +
+
+                        "WHERE p." + Publicaciones.ID + " = ?";
+
+        String[] argumentos = {
+                String.valueOf(publicacionId)
+        };
+
+        try (Cursor cursor = db.rawQuery(sql, argumentos)) {
+
+            if (!cursor.moveToFirst()) {
+                throw new IllegalArgumentException(
+                        "Publicación inexistente"
+                );
+            }
+
+            int vendedor = cursor.getInt(0);
+            String modalidad = cursor.getString(1);
+            String estadoPublicacion = cursor.getString(2);
+
+            if (vendedor == solicitante) {
+                throw new IllegalArgumentException(
+                        "No puedes escribirte a ti mismo"
+                );
+            }
+
+            if (Publicaciones.BORRADO.equals(estadoPublicacion)) {
+                throw new IllegalArgumentException(
+                        "Publicación eliminada"
+                );
+            }
+
+            if (Publicaciones.SUBASTA.equals(modalidad)) {
+
+                boolean sinFechaFin = cursor.isNull(3);
+
+                boolean noFinalizada = !sinFechaFin
+                        && System.currentTimeMillis()
+                        < cursor.getLong(3);
+
+                boolean cancelada = Subastas.CANCELADA.equals(
+                        cursor.getString(4)
+                );
+
+                if (sinFechaFin || noFinalizada || cancelada) {
+                    throw new IllegalArgumentException(
+                            "El chat estará disponible cuando " +
+                                    "finalice la subasta"
+                    );
+                }
+
+            } else if (!Publicaciones.ACTIVO.equals(estadoPublicacion)
+                    && !Publicaciones.VENDIDO.equals(estadoPublicacion)) {
+
+                throw new IllegalArgumentException(
+                        "La publicación no permite nuevas conversaciones"
+                );
             }
         }
     }
 
-    public long iniciar(long publicacionId,int interesado) {
-        SQLiteDatabase db=helper.getWritableDatabase();db.beginTransaction();
+    // =====================================================
+    // INICIAR O RECUPERAR CHAT
+    // =====================================================
+
+    public long iniciar(long publicacionId, int interesado) {
+
+        SQLiteDatabase db = helper.getWritableDatabase();
+
+        db.beginTransaction();
+
         try {
-            validarInicio(db,publicacionId,interesado);
+            validarInicio(db, publicacionId, interesado);
+
             int vendedor;
-            try(Cursor c=db.rawQuery("SELECT vendedor_id FROM publicaciones WHERE id=?",new String[]{""+publicacionId})) {c.moveToFirst();vendedor=c.getInt(0);}
-            try(Cursor u=db.rawQuery("SELECT id FROM usuarios WHERE id=?",new String[]{""+interesado})) {
-                if(!u.moveToFirst()) throw new IllegalArgumentException("Sesión inválida");
-            }
-            ContentValues v=new ContentValues();v.put("publicacion_id",publicacionId);v.put("comprador_id",interesado);v.put("vendedor_id",vendedor);v.put("creado_ms",System.currentTimeMillis());
-            db.insertWithOnConflict("chats",null,v,SQLiteDatabase.CONFLICT_IGNORE);
-            long id;
-            try(Cursor c=db.rawQuery("SELECT id FROM chats WHERE publicacion_id=? AND comprador_id=?",new String[]{""+publicacionId,""+interesado})) {
-                if(!c.moveToFirst())throw new IllegalStateException("No se pudo iniciar chat"); id=c.getLong(0);
-            }
-            db.setTransactionSuccessful();return id;
-        } finally {db.endTransaction();}
-    }
 
-    public boolean participante(long chatId,int usuario) {
-        try(Cursor c=helper.getReadableDatabase().rawQuery("SELECT id FROM chats WHERE id=? AND (comprador_id=? OR vendedor_id=?)",new String[]{""+chatId,""+usuario,""+usuario})) {return c.moveToFirst();}
-    }
+            String consultaVendedor =
+                    "SELECT " + Publicaciones.VENDEDOR_ID + " " +
+                            "FROM " + Publicaciones.TABLE + " " +
+                            "WHERE " + Publicaciones.ID + " = ?";
 
-    public String titulo(long chatId,int usuario) {
-        String q="SELECT p.title,CASE WHEN c.comprador_id=? THEN v.name ELSE b.name END " +
-                 "FROM chats c JOIN publicaciones p ON p.id=c.publicacion_id " +
-                 "JOIN usuarios v ON v.id=c.vendedor_id JOIN usuarios b ON b.id=c.comprador_id " +
-                 "WHERE c.id=? AND (c.comprador_id=? OR c.vendedor_id=?)";
-        try(Cursor c=helper.getReadableDatabase().rawQuery(q,new String[]{""+usuario,""+chatId,""+usuario,""+usuario})) {
-            if(!c.moveToFirst())throw new IllegalArgumentException("Chat no autorizado");return c.getString(0)+" · "+c.getString(1);
+            try (Cursor cursor = db.rawQuery(
+                    consultaVendedor,
+                    new String[]{String.valueOf(publicacionId)}
+            )) {
+                if (!cursor.moveToFirst()) {
+                    throw new IllegalArgumentException(
+                            "Publicación inexistente"
+                    );
+                }
+
+                vendedor = cursor.getInt(0);
+            }
+
+            String consultaUsuario =
+                    "SELECT " + Usuarios.ID + " " +
+                            "FROM " + Usuarios.TABLE + " " +
+                            "WHERE " + Usuarios.ID + " = ?";
+
+            try (Cursor cursor = db.rawQuery(
+                    consultaUsuario,
+                    new String[]{String.valueOf(interesado)}
+            )) {
+                if (!cursor.moveToFirst()) {
+                    throw new IllegalArgumentException(
+                            "Sesión inválida"
+                    );
+                }
+            }
+
+            ContentValues valores = new ContentValues();
+
+            valores.put(Chats.PUBLICACION_ID, publicacionId);
+            valores.put(Chats.COMPRADOR_ID, interesado);
+            valores.put(Chats.VENDEDOR_ID, vendedor);
+            valores.put(Chats.CREADO, System.currentTimeMillis());
+
+            // Conserva una conversación existente si ya existe.
+            db.insertWithOnConflict(
+                    Chats.TABLE,
+                    null,
+                    valores,
+                    SQLiteDatabase.CONFLICT_IGNORE
+            );
+
+            String consultaChat =
+                    "SELECT " + Chats.ID + " " +
+                            "FROM " + Chats.TABLE + " " +
+                            "WHERE " + Chats.PUBLICACION_ID + " = ? " +
+                            "AND " + Chats.COMPRADOR_ID + " = ?";
+
+            String[] argumentos = {
+                    String.valueOf(publicacionId),
+                    String.valueOf(interesado)
+            };
+
+            long chatId;
+
+            try (Cursor cursor = db.rawQuery(
+                    consultaChat,
+                    argumentos
+            )) {
+                if (!cursor.moveToFirst()) {
+                    throw new IllegalStateException(
+                            "No se pudo iniciar chat"
+                    );
+                }
+
+                chatId = cursor.getLong(0);
+            }
+
+            db.setTransactionSuccessful();
+
+            return chatId;
+
+        } finally {
+            db.endTransaction();
         }
     }
+
+    // =====================================================
+    // VERIFICAR PARTICIPACIÓN
+    // =====================================================
+
+    public boolean participante(long chatId, int usuario) {
+
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        String consulta =
+                "SELECT " + Chats.ID + " " +
+                        "FROM " + Chats.TABLE + " " +
+                        "WHERE " + Chats.ID + " = ? " +
+                        "AND (" +
+                        Chats.COMPRADOR_ID + " = ? OR " +
+                        Chats.VENDEDOR_ID + " = ?" +
+                        ")";
+
+        String[] argumentos = {
+                String.valueOf(chatId),
+                String.valueOf(usuario),
+                String.valueOf(usuario)
+        };
+
+        try (Cursor cursor = db.rawQuery(
+                consulta,
+                argumentos
+        )) {
+            return cursor.moveToFirst();
+        }
+    }
+
+    // =====================================================
+    // OBTENER TÍTULO DE CONVERSACIÓN
+    // =====================================================
+
+    public String titulo(long chatId, int usuario) {
+
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        String consulta =
+                "SELECT " +
+                        "p." + Publicaciones.TITLE + ", " +
+
+                        "CASE WHEN c." + Chats.COMPRADOR_ID + " = ? " +
+                        "THEN v." + Usuarios.NAME + " " +
+                        "ELSE b." + Usuarios.NAME + " END " +
+
+                        "FROM " + Chats.TABLE + " c " +
+
+                        "JOIN " + Publicaciones.TABLE + " p " +
+                        "ON p." + Publicaciones.ID +
+                        " = c." + Chats.PUBLICACION_ID + " " +
+
+                        "JOIN " + Usuarios.TABLE + " v " +
+                        "ON v." + Usuarios.ID +
+                        " = c." + Chats.VENDEDOR_ID + " " +
+
+                        "JOIN " + Usuarios.TABLE + " b " +
+                        "ON b." + Usuarios.ID +
+                        " = c." + Chats.COMPRADOR_ID + " " +
+
+                        "WHERE c." + Chats.ID + " = ? " +
+                        "AND (c." + Chats.COMPRADOR_ID + " = ? " +
+                        "OR c." + Chats.VENDEDOR_ID + " = ?)";
+
+        String[] argumentos = {
+                String.valueOf(usuario),
+                String.valueOf(chatId),
+                String.valueOf(usuario),
+                String.valueOf(usuario)
+        };
+
+        try (Cursor cursor = db.rawQuery(
+                consulta,
+                argumentos
+        )) {
+            if (!cursor.moveToFirst()) {
+                throw new IllegalArgumentException(
+                        "Chat no autorizado"
+                );
+            }
+
+            return cursor.getString(0)
+                    + " · "
+                    + cursor.getString(1);
+        }
+    }
+
+    // =====================================================
+    // HISTORIAL DE CONVERSACIONES
+    // =====================================================
 
     public List<Entrada> historial(int usuario) {
-        List<Entrada> out=new ArrayList<>();
-        String q="SELECT c.id,p.title,CASE WHEN c.comprador_id=? THEN v.name ELSE b.name END, " +
-                 "COALESCE((SELECT m.texto FROM mensajes m WHERE m.chat_id=c.id ORDER BY m.id DESC LIMIT 1),'Conversación nueva') " +
-                 "FROM chats c JOIN publicaciones p ON p.id=c.publicacion_id " +
-                 "JOIN usuarios v ON v.id=c.vendedor_id JOIN usuarios b ON b.id=c.comprador_id " +
-                 "WHERE c.comprador_id=? OR c.vendedor_id=? ORDER BY COALESCE((SELECT MAX(enviado_ms) FROM mensajes WHERE chat_id=c.id),c.creado_ms) DESC";
-        try(Cursor c=helper.getReadableDatabase().rawQuery(q,new String[]{""+usuario,""+usuario,""+usuario})) {
-            while(c.moveToNext())out.add(new Entrada(c.getLong(0),c.getString(1),c.getString(2),c.getString(3)));
-        }return out;
-    }
 
-    public List<Mensaje> mensajes(long chatId,int usuario) {
-        if(!participante(chatId,usuario))throw new IllegalArgumentException("Chat no autorizado");
-        List<Mensaje> out=new ArrayList<>();
-        try(Cursor c=helper.getReadableDatabase().rawQuery("SELECT id,remitente_id,texto FROM mensajes WHERE chat_id=? ORDER BY id ASC",new String[]{""+chatId})) {
-            while(c.moveToNext())out.add(new Mensaje(c.getLong(0),c.getInt(1),c.getString(2)));
-        }return out;
-    }
+        List<Entrada> resultado = new ArrayList<>();
 
-    public void enviar(long chatId,int usuario,String texto) {
-        String limpio=texto.trim();if(limpio.isEmpty()||limpio.length()>2000)throw new IllegalArgumentException("Mensaje de 1 a 2000 caracteres requerido");
-        SQLiteDatabase db=helper.getWritableDatabase();db.beginTransaction();
-        try {
-            try(Cursor c=db.rawQuery("SELECT c.id,p.modalidad,s.fin_ms,s.status FROM chats c JOIN publicaciones p ON p.id=c.publicacion_id LEFT JOIN subastas s ON s.publicacion_id=p.id WHERE c.id=? AND (c.comprador_id=? OR c.vendedor_id=?)",new String[]{""+chatId,""+usuario,""+usuario})) {
-                if(!c.moveToFirst())throw new IllegalArgumentException("Chat no autorizado");
-                if("SUBASTA".equals(c.getString(1))&&(c.isNull(2)||System.currentTimeMillis()<c.getLong(2)||"CANCELADA".equals(c.getString(3))))
-                    throw new IllegalArgumentException("La subasta aún no ha finalizado");
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        String consulta =
+                "SELECT " +
+                        "c." + Chats.ID + ", " +
+                        "p." + Publicaciones.TITLE + ", " +
+
+                        "CASE WHEN c." + Chats.COMPRADOR_ID + " = ? " +
+                        "THEN v." + Usuarios.NAME + " " +
+                        "ELSE b." + Usuarios.NAME + " END, " +
+
+                        "COALESCE((" +
+                        "SELECT m." + Mensajes.TEXTO + " " +
+                        "FROM " + Mensajes.TABLE + " m " +
+                        "WHERE m." + Mensajes.CHAT_ID +
+                        " = c." + Chats.ID + " " +
+                        "ORDER BY m." + Mensajes.ID + " DESC " +
+                        "LIMIT 1" +
+                        "), 'Conversación nueva') " +
+
+                        "FROM " + Chats.TABLE + " c " +
+
+                        "JOIN " + Publicaciones.TABLE + " p " +
+                        "ON p." + Publicaciones.ID +
+                        " = c." + Chats.PUBLICACION_ID + " " +
+
+                        "JOIN " + Usuarios.TABLE + " v " +
+                        "ON v." + Usuarios.ID +
+                        " = c." + Chats.VENDEDOR_ID + " " +
+
+                        "JOIN " + Usuarios.TABLE + " b " +
+                        "ON b." + Usuarios.ID +
+                        " = c." + Chats.COMPRADOR_ID + " " +
+
+                        "WHERE c." + Chats.COMPRADOR_ID + " = ? " +
+                        "OR c." + Chats.VENDEDOR_ID + " = ? " +
+
+                        "ORDER BY COALESCE((" +
+                        "SELECT MAX(" + Mensajes.ENVIADO + ") " +
+                        "FROM " + Mensajes.TABLE + " " +
+                        "WHERE " + Mensajes.CHAT_ID +
+                        " = c." + Chats.ID +
+                        "), c." + Chats.CREADO + ") DESC";
+
+        String[] argumentos = {
+                String.valueOf(usuario),
+                String.valueOf(usuario),
+                String.valueOf(usuario)
+        };
+
+        try (Cursor cursor = db.rawQuery(
+                consulta,
+                argumentos
+        )) {
+            while (cursor.moveToNext()) {
+                resultado.add(new Entrada(
+                        cursor.getLong(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getString(3)
+                ));
             }
-            ContentValues v=new ContentValues();v.put("chat_id",chatId);v.put("remitente_id",usuario);v.put("texto",limpio);v.put("enviado_ms",System.currentTimeMillis());
-            db.insertOrThrow("mensajes",null,v);db.setTransactionSuccessful();
-        } finally {db.endTransaction();}
+        }
+
+        return resultado;
+    }
+
+    // =====================================================
+    // LISTAR MENSAJES
+    // =====================================================
+
+    public List<Mensaje> mensajes(long chatId, int usuario) {
+
+        if (!participante(chatId, usuario)) {
+            throw new IllegalArgumentException(
+                    "Chat no autorizado"
+            );
+        }
+
+        List<Mensaje> resultado = new ArrayList<>();
+
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        String[] columnas = {
+                Mensajes.ID,
+                Mensajes.REMITENTE_ID,
+                Mensajes.TEXTO
+        };
+
+        try (Cursor cursor = db.query(
+                Mensajes.TABLE,
+                columnas,
+                Mensajes.CHAT_ID + " = ?",
+                new String[]{String.valueOf(chatId)},
+                null,
+                null,
+                Mensajes.ID + " ASC"
+        )) {
+
+            int indiceId = cursor.getColumnIndexOrThrow(
+                    Mensajes.ID
+            );
+
+            int indiceRemitente = cursor.getColumnIndexOrThrow(
+                    Mensajes.REMITENTE_ID
+            );
+
+            int indiceTexto = cursor.getColumnIndexOrThrow(
+                    Mensajes.TEXTO
+            );
+
+            while (cursor.moveToNext()) {
+                resultado.add(new Mensaje(
+                        cursor.getLong(indiceId),
+                        cursor.getInt(indiceRemitente),
+                        cursor.getString(indiceTexto)
+                ));
+            }
+        }
+
+        return resultado;
+    }
+
+    // =====================================================
+    // ENVIAR MENSAJE
+    // =====================================================
+
+    public void enviar(
+            long chatId,
+            int usuario,
+            String texto
+    ) {
+
+        if (texto == null) {
+            throw new IllegalArgumentException(
+                    "El mensaje no puede estar vacío"
+            );
+        }
+
+        String limpio = texto.trim();
+
+        if (limpio.isEmpty()
+                || limpio.length() > MAX_LONGITUD_MENSAJE) {
+
+            throw new IllegalArgumentException(
+                    "Mensaje de 1 a 2000 caracteres requerido"
+            );
+        }
+
+        SQLiteDatabase db = helper.getWritableDatabase();
+
+        db.beginTransaction();
+
+        try {
+            String consulta =
+                    "SELECT " +
+                            "c." + Chats.ID + ", " +
+                            "p." + Publicaciones.MODALIDAD + ", " +
+                            "s." + Subastas.FIN + ", " +
+                            "s." + Subastas.STATUS + " " +
+
+                            "FROM " + Chats.TABLE + " c " +
+
+                            "JOIN " + Publicaciones.TABLE + " p " +
+                            "ON p." + Publicaciones.ID +
+                            " = c." + Chats.PUBLICACION_ID + " " +
+
+                            "LEFT JOIN " + Subastas.TABLE + " s " +
+                            "ON s." + Subastas.PUBLICACION_ID +
+                            " = p." + Publicaciones.ID + " " +
+
+                            "WHERE c." + Chats.ID + " = ? " +
+                            "AND (c." + Chats.COMPRADOR_ID + " = ? " +
+                            "OR c." + Chats.VENDEDOR_ID + " = ?)";
+
+            String[] argumentos = {
+                    String.valueOf(chatId),
+                    String.valueOf(usuario),
+                    String.valueOf(usuario)
+            };
+
+            try (Cursor cursor = db.rawQuery(
+                    consulta,
+                    argumentos
+            )) {
+                if (!cursor.moveToFirst()) {
+                    throw new IllegalArgumentException(
+                            "Chat no autorizado"
+                    );
+                }
+
+                String modalidad = cursor.getString(1);
+
+                if (Publicaciones.SUBASTA.equals(modalidad)) {
+
+                    boolean sinFechaFin = cursor.isNull(2);
+
+                    boolean noFinalizada = !sinFechaFin
+                            && System.currentTimeMillis()
+                            < cursor.getLong(2);
+
+                    boolean cancelada = Subastas.CANCELADA.equals(
+                            cursor.getString(3)
+                    );
+
+                    if (sinFechaFin || noFinalizada || cancelada) {
+                        throw new IllegalArgumentException(
+                                "La subasta aún no ha finalizado"
+                        );
+                    }
+                }
+            }
+
+            ContentValues valores = new ContentValues();
+
+            valores.put(Mensajes.CHAT_ID, chatId);
+            valores.put(Mensajes.REMITENTE_ID, usuario);
+            valores.put(Mensajes.TEXTO, limpio);
+            valores.put(
+                    Mensajes.ENVIADO,
+                    System.currentTimeMillis()
+            );
+
+            db.insertOrThrow(
+                    Mensajes.TABLE,
+                    null,
+                    valores
+            );
+
+            db.setTransactionSuccessful();
+
+        } finally {
+            db.endTransaction();
+        }
     }
 }
