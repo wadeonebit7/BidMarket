@@ -18,9 +18,9 @@ import androidx.core.graphics.Insets;
 
 import android.graphics.Color;
 
-import com.example.bidmarket.respositories.ChatRepository;
-import com.example.bidmarket.respositories.ImagenesRepository;
-import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.repositories.ChatRepository;
+import com.example.bidmarket.repositories.ImagenesRepository;
+import com.example.bidmarket.repositories.PublicacionRepository;
 import com.example.bidmarket.R;
 
 public class DetallePublicacionActivity extends AppCompatActivity {

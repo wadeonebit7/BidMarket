@@ -1,7 +1,7 @@
 package com.example.bidmarket.activities;
 
 import com.example.bidmarket.adapters.PublicacionAdapter;
-import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.repositories.PublicacionRepository;
 import com.example.bidmarket.R;
 import com.example.bidmarket.models.Publicacion;
 import android.os.Bundle;

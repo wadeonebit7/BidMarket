@@ -14,7 +14,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
-import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.repositories.PublicacionRepository;
 import com.example.bidmarket.R;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.FusedLocationProviderClient;

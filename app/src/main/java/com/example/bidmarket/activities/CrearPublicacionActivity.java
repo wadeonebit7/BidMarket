@@ -4,8 +4,8 @@ import android.Manifest;
 import android.content.pm.PackageManager;
 import androidx.core.content.ContextCompat;
 
-import com.example.bidmarket.respositories.ImagenesRepository;
-import com.example.bidmarket.respositories.PublicacionRepository;
+import com.example.bidmarket.repositories.ImagenesRepository;
+import com.example.bidmarket.repositories.PublicacionRepository;
 import com.example.bidmarket.R;
 import com.google.android.gms.location.LocationServices;
 import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;

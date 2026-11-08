@@ -1,4 +1,4 @@
-package com.example.bidmarket.respositories;
+package com.example.bidmarket.repositories;
 
 import android.content.ContentValues;
 import android.content.Context;
