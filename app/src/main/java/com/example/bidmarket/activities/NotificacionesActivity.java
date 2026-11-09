@@ -1,14 +1,12 @@
 package com.example.bidmarket.activities;
 
-import android.content.ContentValues;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.repositories.NotificacionRepository;
+import java.util.List;
 
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
@@ -21,14 +19,24 @@ public class NotificacionesActivity extends AppCompatActivity {
         ListView list=new ListView(this);setContentView(list);
         int usuario=getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1);
         if(usuario<=0){finish();return;}
-        io.execute(()->{
-            SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();ArrayList<String> data=new ArrayList<>();
-            try(Cursor c=db.query("notificaciones",new String[]{"mensaje","fecha_ms"},"usuario_id=?",new String[]{""+usuario},null,null,"fecha_ms DESC")){
-                while(c.moveToNext())data.add(new java.util.Date(c.getLong(1))+"\n"+c.getString(0));
+        io.execute(() -> {
+            ArrayList<String> datos = new ArrayList<>();
+            try {
+                List<NotificacionRepository.Aviso> avisos =
+                        new NotificacionRepository(getApplicationContext())
+                                .listarYMarcarLeidas(usuario);
+                for (NotificacionRepository.Aviso aviso : avisos) {
+                    datos.add(new java.util.Date(aviso.fechaMs) + "\n" + aviso.mensaje);
+                }
+                if (datos.isEmpty()) {
+                    datos.add("No tienes notificaciones todavía");
+                }
+            } catch (Exception ex) {
+                android.util.Log.e("BidMarket", "Error al cargar notificaciones", ex);
+                datos.add("No se pudieron cargar las notificaciones");
             }
-            if(data.isEmpty())data.add("No tienes notificaciones todavía");
-            ContentValues v=new ContentValues();v.put("leida",1);db.update("notificaciones",v,"usuario_id=?",new String[]{""+usuario});
-            runOnUiThread(()->list.setAdapter(new ArrayAdapter<>(this,android.R.layout.simple_list_item_1,data)));
+            runOnUiThread(() -> list.setAdapter(
+                    new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, datos)));
         });
     }
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}

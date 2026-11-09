@@ -1,9 +1,6 @@
 package com.example.bidmarket.activities;
 
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.widget.*;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,9 +14,8 @@ import android.view.View;
 
 import androidx.core.view.WindowCompat;
 
-import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.repositories.AuthRepository;
 import com.example.bidmarket.R;
-import com.example.bidmarket.utils.SecurityUtils;
 
 public class LoginActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -70,19 +66,28 @@ public class LoginActivity extends AppCompatActivity {
     private void login(){String email=correo.getText().toString().trim(),pass=contrasena.getText().toString();
         if(email.isEmpty()||pass.isEmpty()){mensaje("Ingresa correo y contraseña");return;}
         ingresar.setEnabled(false);
-        io.execute(()->{
-            int id=-1;String error="Credenciales incorrectas";
-            try{
-                SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();
-                try(Cursor c=db.rawQuery("SELECT u.id,c.id,c.password_hash,c.status FROM cuentas c JOIN usuarios u ON u.cuentas_id=c.id WHERE c.email=? COLLATE NOCASE",new String[]{email})){
-                    if(c.moveToFirst() && "ACTIVE".equals(c.getString(3)) && SecurityUtils.verificar(pass,c.getString(2))){
-                        id=c.getInt(0);
-                        if(SecurityUtils.requiereMigracion(c.getString(2))){ContentValues v=new ContentValues();v.put("password_hash",SecurityUtils.hashPassword(pass));db.update("cuentas",v,"id=?",new String[]{""+c.getLong(1)});}
-                    }
+        io.execute(() -> {
+            int id = -1;
+            String error = "Credenciales incorrectas";
+            try {
+                id = new AuthRepository(getApplicationContext())
+                        .iniciarSesion(email, pass);
+            } catch (Exception ex) {
+                android.util.Log.e("BidMarket", "Error al iniciar sesión", ex);
+                error = "No se pudo consultar la cuenta";
+            }
+            final int usuarioId = id;
+            final String mensajeError = error;
+            runOnUiThread(() -> {
+                ingresar.setEnabled(true);
+                if (usuarioId > 0) {
+                    getSharedPreferences("MisPreferencias", MODE_PRIVATE)
+                            .edit().putInt("usuario_id", usuarioId).apply();
+                    abrir();
+                } else {
+                    mensaje(mensajeError);
                 }
-            }catch(Exception e){error="No se pudo consultar la cuenta";}
-            final int user=id;final String mensajeError=error;
-            runOnUiThread(()->{ingresar.setEnabled(true);if(user>0){getSharedPreferences("MisPreferencias",MODE_PRIVATE).edit().putInt("usuario_id",user).apply();abrir();}else mensaje(mensajeError);});
+            });
         });
     }
     private void abrir(){Intent i=new Intent(this,DashboardActivity.class);i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);startActivity(i);finish();}
