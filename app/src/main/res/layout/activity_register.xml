@@ -1,203 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
-    xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#171E29"
-    android:fillViewport="true"
-    android:clipToPadding="false"
-    android:scrollbars="none">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingStart="26dp"
-        android:paddingEnd="26dp"
-        android:paddingTop="32dp"
-        android:paddingBottom="40dp">
-
-        <!-- Encabezado -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="BidMarket+"
-            android:textColor="#94A3B8"
-            android:textSize="15sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="34dp"
-            android:text="Crear cuenta"
-            android:textColor="#FFFFFF"
-            android:textSize="30sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:layout_marginBottom="30dp"
-            android:text="Únete para comprar, vender y participar en subastas."
-            android:textColor="#AAB8CA"
-            android:textSize="15sp"
-            android:lineSpacingExtra="3dp" />
-
-        <!-- Nombre completo -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Nombre completo"
-            android:textColor="#E2E8F0"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etNombre"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#64748B"
-            android:hint="Tu nombre y apellido"
-            android:inputType="textPersonName"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#8191A5"
-            android:textSize="15sp"
-            android:paddingHorizontal="12dp" />
-
-        <!-- Nombre de usuario -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Nombre de usuario"
-            android:textColor="#E2E8F0"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etUsername"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#64748B"
-            android:hint="Elige un nombre de usuario"
-            android:inputType="textNoSuggestions"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#8191A5"
-            android:textSize="15sp"
-            android:paddingHorizontal="12dp" />
-
-        <!-- Correo electrónico -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Correo electrónico"
-            android:textColor="#E2E8F0"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etEmail"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#64748B"
-            android:hint="correo@ejemplo.com"
-            android:inputType="textEmailAddress"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#8191A5"
-            android:textSize="15sp"
-            android:paddingHorizontal="12dp" />
-
-        <!-- Contraseña -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Contraseña"
-            android:textColor="#E2E8F0"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etPassword"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#64748B"
-            android:hint="Mínimo 8 caracteres"
-            android:inputType="textPassword"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#8191A5"
-            android:textSize="15sp"
-            android:paddingHorizontal="12dp" />
-
-        <!-- Confirmar contraseña -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:text="Confirmar contraseña"
-            android:textColor="#E2E8F0"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <EditText
-            android:id="@+id/etRepetirPassword"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="8dp"
-            android:backgroundTint="#64748B"
-            android:hint="Repite tu contraseña"
-            android:inputType="textPassword"
-            android:singleLine="true"
-            android:textColor="#FFFFFF"
-            android:textColorHint="#8191A5"
-            android:textSize="15sp"
-            android:paddingHorizontal="12dp" />
-
-        <!-- Términos -->
-        <CheckBox
-            android:id="@+id/cbTerminos"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:buttonTint="#FFFFFF"
-            android:text="Acepto los términos y condiciones"
-            android:textColor="#CBD5E1"
-            android:textSize="14sp" />
-
-        <!-- Registrar -->
-        <Button
-            android:id="@+id/btnRegistrarse"
-            android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:layout_marginTop="26dp"
-            android:backgroundTint="#FFFFFF"
-            android:text="Crear cuenta"
-            android:textAllCaps="false"
-            android:textColor="#171E29"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="22dp"
-            android:text="Tus datos se almacenan localmente en este prototipo."
-            android:textColor="#8191A5"
-            android:textSize="12sp"
-            android:gravity="center" />
-
-    </LinearLayout>
-
-</ScrollView>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/main" android:layout_width="match_parent" android:layout_height="match_parent" android:background="#171E29" android:fillViewport="true">
+<LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="24dp">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="BidMarket+" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="20sp" android:layout_marginTop="25dp"/>
+<TextView android:id="@+id/tvPasoRegistro" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="26dp" android:textColor="#A8B7C8" android:textSize="13sp" android:text="PASO 1 DE 3"/>
+<TextView android:id="@+id/tvTituloRegistro" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:text="Crea tu cuenta" android:textColor="#FFFFFF" android:textStyle="bold" android:textSize="29sp"/>
+<TextView android:id="@+id/tvDescripcionRegistro" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="Comienza con tu correo electrónico." android:textColor="#AFBECE" android:textSize="14sp"/>
+<LinearLayout android:id="@+id/panelCorreo" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:orientation="vertical">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Correo electrónico" android:textColor="#E6EDF4" android:textSize="14sp" android:textStyle="bold" /><EditText android:id="@+id/etEmail" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="10dp" android:background="@drawable/auth_field_dark" android:paddingStart="16dp" android:paddingEnd="16dp" android:inputType="textEmailAddress" android:singleLine="true" android:hint="correo@ejemplo.com" android:textColor="#FFFFFF" android:textColorHint="#A0AEC0" android:textSize="15sp" /><Button android:id="@+id/btnContinuarCorreo" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="20dp" android:backgroundTint="#DCE6EF" android:text="Continuar con correo electrónico" android:textAllCaps="false" android:textColor="#171E29" android:textSize="15sp" />
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:text="o" android:gravity="center" android:layout_marginTop="18dp" android:textColor="#A8B7C8" android:textSize="14sp"/>
+<Button android:id="@+id/btnGoogleRegistro" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="20dp" android:backgroundTint="#FFFFFF" android:text="Continuar con Google" android:textAllCaps="false" android:textColor="#202124" android:textSize="15sp" />
+</LinearLayout>
+<LinearLayout android:id="@+id/panelIdentidad" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:orientation="vertical" android:visibility="gone">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Nombre completo" android:textColor="#E6EDF4" android:textSize="14sp" android:textStyle="bold" /><EditText android:id="@+id/etNombre" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="10dp" android:background="@drawable/auth_field_dark" android:paddingStart="16dp" android:paddingEnd="16dp" android:inputType="textPersonName" android:singleLine="true" android:hint="Tu nombre" android:textColor="#FFFFFF" android:textColorHint="#A0AEC0" android:textSize="15sp" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Nombre de usuario" android:textColor="#E6EDF4" android:textSize="14sp" android:textStyle="bold" /><EditText android:id="@+id/etUsername" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="10dp" android:background="@drawable/auth_field_dark" android:paddingStart="16dp" android:paddingEnd="16dp" android:inputType="textNoSuggestions" android:singleLine="true" android:hint="Elige un usuario" android:textColor="#FFFFFF" android:textColorHint="#A0AEC0" android:textSize="15sp" /><Button android:id="@+id/btnContinuarDatos" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="20dp" android:backgroundTint="#DCE6EF" android:text="Continuar" android:textAllCaps="false" android:textColor="#171E29" android:textSize="15sp" />
+</LinearLayout>
+<LinearLayout android:id="@+id/panelSeguridad" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="28dp" android:orientation="vertical" android:visibility="gone">
+<TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Contraseña" android:textColor="#E6EDF4" android:textSize="14sp" android:textStyle="bold" /><EditText android:id="@+id/etPassword" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="10dp" android:background="@drawable/auth_field_dark" android:paddingStart="16dp" android:paddingEnd="16dp" android:inputType="textPassword" android:singleLine="true" android:hint="Mínimo 8 caracteres" android:textColor="#FFFFFF" android:textColorHint="#A0AEC0" android:textSize="15sp" /><TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:text="Confirmar contraseña" android:textColor="#E6EDF4" android:textSize="14sp" android:textStyle="bold" /><EditText android:id="@+id/etRepetirPassword" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="10dp" android:background="@drawable/auth_field_dark" android:paddingStart="16dp" android:paddingEnd="16dp" android:inputType="textPassword" android:singleLine="true" android:hint="Repite la contraseña" android:textColor="#FFFFFF" android:textColorHint="#A0AEC0" android:textSize="15sp" />
+<CheckBox android:id="@+id/cbTerminos" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="16dp" android:buttonTint="#FFFFFF" android:text="Acepto los términos y condiciones" android:textColor="#E6EDF4"/><Button android:id="@+id/btnRegistrarse" android:layout_width="match_parent" android:layout_height="54dp" android:layout_marginTop="20dp" android:backgroundTint="#DCE6EF" android:text="Crear cuenta" android:textAllCaps="false" android:textColor="#171E29" android:textSize="15sp" />
+</LinearLayout>
+<TextView android:id="@+id/tvVolverPaso" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:layout_marginTop="25dp" android:padding="12dp" android:text="Volver al paso anterior" android:textColor="#DDE8F2" android:visibility="gone" android:clickable="true" android:focusable="true" />
+<TextView android:id="@+id/tvIrLogin" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center" android:layout_marginTop="18dp" android:padding="12dp" android:text="¿Ya tienes cuenta? Inicia sesión" android:textColor="#DDE8F2" android:clickable="true" android:focusable="true" />
+</LinearLayout></ScrollView>

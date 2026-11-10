@@ -62,6 +62,14 @@ public class LoginActivity extends AppCompatActivity {
 
         correo=findViewById(R.id.etCorreoLogin);contrasena=findViewById(R.id.etPasswordLogin);ingresar=findViewById(R.id.btnIngresar);
         ingresar.setOnClickListener(v->login());
+        findViewById(R.id.tvIrRegistro).setOnClickListener(v -> {
+            Intent intent = new Intent(this, RegisterActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
+        });
+        findViewById(R.id.btnGoogleLogin).setOnClickListener(v ->
+            mensaje("Google requiere configurar Credential Manager y Firebase Authentication"));
     }
     private void login(){String email=correo.getText().toString().trim(),pass=contrasena.getText().toString();
         if(email.isEmpty()||pass.isEmpty()){mensaje("Ingresa correo y contraseña");return;}
