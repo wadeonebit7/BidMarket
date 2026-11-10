@@ -1,8 +1,6 @@
 package com.example.bidmarket.activities;
 
-import android.content.ContentValues;
 import android.content.Intent;
-import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Patterns;
 import android.widget.*;
@@ -11,9 +9,8 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
-import com.example.bidmarket.database.BidMarketDbHelper;
+import com.example.bidmarket.repositories.AuthRepository;
 import com.example.bidmarket.R;
-import com.example.bidmarket.utils.SecurityUtils;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,18 +35,27 @@ public class RegisterActivity extends AppCompatActivity {
         if(p.length()<8||!p.equals(q)){mensaje("Contraseña: mínimo 8 caracteres y confirmación igual");return;}
         if(!terminos.isChecked()){mensaje("Acepta los términos para continuar");return;}
         boton.setEnabled(false);
-        io.execute(()->{
-            SQLiteDatabase db=new BidMarketDbHelper(this).getWritableDatabase();boolean ok=false;
-            db.beginTransaction();
-            try{
-                ContentValues c=new ContentValues();c.put("name",n);c.put("user_name",u);c.put("email",e);c.put("password_hash", SecurityUtils.hashPassword(p));
-                long cuenta=db.insertOrThrow("cuentas",null,c);
-                ContentValues profile=new ContentValues();profile.put("cuentas_id",cuenta);profile.put("name",n);profile.put("user_name",u);
-                db.insertOrThrow("usuarios",null,profile);
-                db.setTransactionSuccessful();ok=true;
-            }catch(Exception ex){android.util.Log.w("BidMarket","Fallo de registro",ex);}finally{db.endTransaction();}
-            boolean resultado=ok;
-            runOnUiThread(()->{boton.setEnabled(true);if(resultado){mensaje("Cuenta creada");startActivity(new Intent(this,LoginActivity.class));finish();}else mensaje("No se pudo registrar. Verifica que el correo y usuario no existan.");});
+        io.execute(() -> {
+            boolean registrado;
+            try {
+                new AuthRepository(getApplicationContext())
+                        .registrarUsuario(n, u, e, p);
+                registrado = true;
+            } catch (Exception ex) {
+                android.util.Log.w("BidMarket", "Fallo de registro", ex);
+                registrado = false;
+            }
+            final boolean resultado = registrado;
+            runOnUiThread(() -> {
+                boton.setEnabled(true);
+                if (resultado) {
+                    mensaje("Cuenta creada");
+                    startActivity(new Intent(this, LoginActivity.class));
+                    finish();
+                } else {
+                    mensaje("No se pudo registrar. Verifica que el correo y usuario no existan.");
+                }
+            });
         });
     }
     private void mensaje(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}

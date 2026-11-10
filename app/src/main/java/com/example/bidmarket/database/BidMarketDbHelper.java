@@ -5,66 +5,653 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-public class BidMarketDbHelper extends SQLiteOpenHelper {
+import com.example.bidmarket.database.BidMarketContract.Cuentas;
+import com.example.bidmarket.database.BidMarketContract.Usuarios;
+import com.example.bidmarket.database.BidMarketContract.Categorias;
+import com.example.bidmarket.database.BidMarketContract.Publicaciones;
+import com.example.bidmarket.database.BidMarketContract.Imagenes;
+import com.example.bidmarket.database.BidMarketContract.Favoritos;
+import com.example.bidmarket.database.BidMarketContract.Subastas;
+import com.example.bidmarket.database.BidMarketContract.Pujas;
+import com.example.bidmarket.database.BidMarketContract.Compras;
+import com.example.bidmarket.database.BidMarketContract.Notificaciones;
+import com.example.bidmarket.database.BidMarketContract.Chats;
+import com.example.bidmarket.database.BidMarketContract.Mensajes;
+
+/**
+ * Administra el esquema SQLite de BidMarket+.
+ *
+ * Responsabilidades:
+ * - Crear tablas, restricciones e índices.
+ * - Habilitar la integridad referencial.
+ * - Insertar categorías iniciales.
+ * - Ejecutar migraciones entre versiones.
+ *
+ * Los identificadores del esquema se obtienen
+ * desde BidMarketContract.
+ */
+public final class BidMarketDbHelper extends SQLiteOpenHelper {
+
     public static final String DATABASE_NAME = "bidmarket.db";
     public static final int DATABASE_VERSION = 3;
 
-    public BidMarketDbHelper(Context context) { super(context, DATABASE_NAME, null, DATABASE_VERSION); }
+    public BidMarketDbHelper(Context context) {
+        super(context, DATABASE_NAME, null, DATABASE_VERSION);
+    }
 
-    @Override public void onConfigure(SQLiteDatabase db) {
+    // =====================================================
+    // CONFIGURACIÓN
+    // =====================================================
+
+    @Override
+    public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
         db.setForeignKeyConstraintsEnabled(true);
     }
 
-    @Override public void onCreate(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE cuentas (id INTEGER PRIMARY KEY AUTOINCREMENT, status TEXT NOT NULL DEFAULT 'ACTIVE' CHECK(status IN ('ACTIVE','SUSPENDED','DELETED')), name TEXT, user_name TEXT NOT NULL UNIQUE, email TEXT NOT NULL COLLATE NOCASE UNIQUE, password_hash TEXT NOT NULL, create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, delete_at TEXT)");
-        db.execSQL("CREATE TABLE usuarios (id INTEGER PRIMARY KEY AUTOINCREMENT, cuentas_id INTEGER NOT NULL UNIQUE REFERENCES cuentas(id) ON DELETE CASCADE, profile_picture_url TEXT, name TEXT, user_name TEXT NOT NULL UNIQUE, rating_score REAL)");
-        db.execSQL("CREATE TABLE categorias (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE)");
-        db.execSQL("CREATE TABLE publicaciones (id INTEGER PRIMARY KEY AUTOINCREMENT, vendedor_id INTEGER NOT NULL REFERENCES usuarios(id), categoria_id INTEGER NOT NULL REFERENCES categorias(id), title TEXT NOT NULL, description TEXT, price REAL NOT NULL CHECK(price > 0), currency TEXT NOT NULL DEFAULT 'CLP', condition TEXT NOT NULL CHECK(condition IN ('Nuevo','Usado como nuevo','Buen Estado','Aceptable')), status TEXT NOT NULL DEFAULT 'Activo' CHECK(status IN ('Activo','Vendido','Pausado','Borrado')), latitude REAL, longitude REAL, location_name TEXT NOT NULL, views_count INTEGER NOT NULL DEFAULT 0, update_at TEXT, create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, delete_at TEXT, modalidad TEXT NOT NULL DEFAULT 'VENTA' CHECK(modalidad IN ('VENTA','SUBASTA')))");
-        db.execSQL("CREATE TABLE imagenes (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE, image_url TEXT NOT NULL UNIQUE, display_order INTEGER NOT NULL, UNIQUE(publicacion_id,display_order))");
-        db.execSQL("CREATE TABLE favoritos (usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id) ON DELETE CASCADE, save_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, PRIMARY KEY(usuario_id,publicacion_id))");
-        createNewTables(db);
-        createChatTables(db);
-        db.execSQL("CREATE INDEX idx_publicaciones_categoria ON publicaciones(categoria_id)");
-        db.execSQL("CREATE INDEX idx_publicaciones_vendedor ON publicaciones(vendedor_id)");
-        insertCategorias(db);
+    // =====================================================
+    // CREACIÓN INICIAL
+    // =====================================================
+
+    @Override
+    public void onCreate(SQLiteDatabase db) {
+        crearCuentas(db);
+        crearUsuarios(db);
+        crearCategorias(db);
+        crearPublicaciones(db);
+        crearImagenes(db);
+        crearFavoritos(db);
+
+        crearTablasVentasYSubastas(db);
+        crearTablasChat(db);
+
+        crearIndicesPublicaciones(db);
+        insertarCategorias(db);
     }
 
-    private void createNewTables(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS subastas (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL UNIQUE REFERENCES publicaciones(id) ON DELETE CASCADE, inicio_ms INTEGER NOT NULL, fin_ms INTEGER NOT NULL, precio_inicial INTEGER NOT NULL CHECK(precio_inicial > 0), status TEXT NOT NULL DEFAULT 'PROGRAMADA' CHECK(status IN ('PROGRAMADA','ACTIVA','FINALIZADA','CANCELADA')), CHECK(fin_ms > inicio_ms))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS pujas (id INTEGER PRIMARY KEY AUTOINCREMENT, subasta_id INTEGER NOT NULL REFERENCES subastas(id) ON DELETE CASCADE, postor_id INTEGER NOT NULL REFERENCES usuarios(id), monto INTEGER NOT NULL CHECK(monto > 0), fecha_ms INTEGER NOT NULL)");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_pujas_subasta ON pujas(subasta_id,monto DESC,id DESC)");
-        db.execSQL("CREATE TABLE IF NOT EXISTS compras (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL UNIQUE REFERENCES publicaciones(id), comprador_id INTEGER NOT NULL REFERENCES usuarios(id), vendedor_id INTEGER NOT NULL REFERENCES usuarios(id), precio_acordado REAL NOT NULL CHECK(precio_acordado > 0), fecha_ms INTEGER NOT NULL, status TEXT NOT NULL DEFAULT 'CONFIRMADA' CHECK(status IN ('CONFIRMADA','CANCELADA'))) ");
-        db.execSQL("CREATE TABLE IF NOT EXISTS notificaciones (id INTEGER PRIMARY KEY AUTOINCREMENT, usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE, mensaje TEXT NOT NULL, leida INTEGER NOT NULL DEFAULT 0 CHECK(leida IN (0,1)), fecha_ms INTEGER NOT NULL)");
+    private void crearCuentas(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Cuentas.TABLE + " (" +
+                        Cuentas.ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        Cuentas.STATUS + " TEXT NOT NULL DEFAULT '" +
+                        Cuentas.ACTIVE + "' CHECK(" +
+                        Cuentas.STATUS + " IN ('" +
+                        Cuentas.ACTIVE + "','" +
+                        Cuentas.SUSPENDED + "','" +
+                        Cuentas.DELETED + "')), " +
+                        Cuentas.NAME + " TEXT, " +
+                        Cuentas.USER_NAME + " TEXT NOT NULL UNIQUE, " +
+                        Cuentas.EMAIL + " TEXT NOT NULL COLLATE NOCASE UNIQUE, " +
+                        Cuentas.PASSWORD_HASH + " TEXT NOT NULL, " +
+                        Cuentas.CREATE_AT + " TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+                        Cuentas.DELETE_AT + " TEXT" +
+                        ")";
+
+        db.execSQL(sql);
     }
 
-    private void createChatTables(SQLiteDatabase db) {
-        db.execSQL("CREATE TABLE IF NOT EXISTS chats (id INTEGER PRIMARY KEY AUTOINCREMENT, publicacion_id INTEGER NOT NULL REFERENCES publicaciones(id), comprador_id INTEGER NOT NULL REFERENCES usuarios(id), vendedor_id INTEGER NOT NULL REFERENCES usuarios(id), creado_ms INTEGER NOT NULL, UNIQUE(publicacion_id,comprador_id), CHECK(comprador_id <> vendedor_id))");
-        db.execSQL("CREATE TABLE IF NOT EXISTS mensajes (id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER NOT NULL REFERENCES chats(id) ON DELETE CASCADE, remitente_id INTEGER NOT NULL REFERENCES usuarios(id), texto TEXT NOT NULL CHECK(length(trim(texto)) > 0), enviado_ms INTEGER NOT NULL, leido INTEGER NOT NULL DEFAULT 0 CHECK(leido IN (0,1)))");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_mensajes_chat ON mensajes(chat_id,id)");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_chats_comprador ON chats(comprador_id)");
-        db.execSQL("CREATE INDEX IF NOT EXISTS idx_chats_vendedor ON chats(vendedor_id)");
+    private void crearUsuarios(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Usuarios.TABLE + " (" +
+                        Usuarios.ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Usuarios.CUENTA_ID + " INTEGER NOT NULL UNIQUE " +
+                        "REFERENCES " + Cuentas.TABLE +
+                        "(" + Cuentas.ID + ") ON DELETE CASCADE, " +
+
+                        Usuarios.PROFILE_PICTURE_URL + " TEXT, " +
+                        Usuarios.NAME + " TEXT, " +
+                        Usuarios.USER_NAME + " TEXT NOT NULL UNIQUE, " +
+                        Usuarios.RATING_SCORE + " REAL" +
+                        ")";
+
+        db.execSQL(sql);
     }
 
-    private void insertCategorias(SQLiteDatabase db) {
-        String[] nombres = {"Electrónica","Hogar","Vehículos","Ropa y Accesorios","Deportes","Libros","Juguetes","Otros"};
-        for (String n : nombres) db.execSQL("INSERT OR IGNORE INTO categorias(name) VALUES(?)",new Object[]{n});
+    private void crearCategorias(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Categorias.TABLE + " (" +
+                        Categorias.ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                        Categorias.NAME + " TEXT NOT NULL UNIQUE" +
+                        ")";
+
+        db.execSQL(sql);
     }
 
-    /** Migra instalaciones de la versión original conservando cuentas, publicaciones e imágenes. */
-    @Override public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+    private void crearPublicaciones(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Publicaciones.TABLE + " (" +
+
+                        Publicaciones.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Publicaciones.VENDEDOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Publicaciones.CATEGORIA_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Categorias.TABLE + "(" + Categorias.ID + "), " +
+
+                        Publicaciones.TITLE + " TEXT NOT NULL, " +
+                        Publicaciones.DESCRIPTION + " TEXT, " +
+
+                        Publicaciones.PRICE +
+                        " REAL NOT NULL CHECK(" +
+                        Publicaciones.PRICE + " > 0), " +
+
+                        Publicaciones.CURRENCY +
+                        " TEXT NOT NULL DEFAULT '" +
+                        Publicaciones.CLP + "', " +
+
+                        Publicaciones.CONDITION +
+                        " TEXT NOT NULL CHECK(" +
+                        Publicaciones.CONDITION + " IN ('" +
+                        Publicaciones.NUEVO + "','" +
+                        Publicaciones.USADO_COMO_NUEVO + "','" +
+                        Publicaciones.BUEN_ESTADO + "','" +
+                        Publicaciones.ACEPTABLE + "')), " +
+
+                        Publicaciones.STATUS +
+                        " TEXT NOT NULL DEFAULT '" +
+                        Publicaciones.ACTIVO + "' CHECK(" +
+                        Publicaciones.STATUS + " IN ('" +
+                        Publicaciones.ACTIVO + "','" +
+                        Publicaciones.VENDIDO + "','" +
+                        Publicaciones.PAUSADO + "','" +
+                        Publicaciones.BORRADO + "')), " +
+
+                        Publicaciones.LATITUDE + " REAL, " +
+                        Publicaciones.LONGITUDE + " REAL, " +
+
+                        Publicaciones.LOCATION_NAME +
+                        " TEXT NOT NULL, " +
+
+                        Publicaciones.VIEWS_COUNT +
+                        " INTEGER NOT NULL DEFAULT 0, " +
+
+                        Publicaciones.UPDATE_AT + " TEXT, " +
+
+                        Publicaciones.CREATE_AT +
+                        " TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+
+                        Publicaciones.DELETE_AT + " TEXT, " +
+
+                        Publicaciones.MODALIDAD +
+                        " TEXT NOT NULL DEFAULT '" +
+                        Publicaciones.VENTA + "' CHECK(" +
+                        Publicaciones.MODALIDAD + " IN ('" +
+                        Publicaciones.VENTA + "','" +
+                        Publicaciones.SUBASTA + "'))" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearImagenes(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Imagenes.TABLE + " (" +
+
+                        Imagenes.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Imagenes.PUBLICACION_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Publicaciones.TABLE +
+                        "(" + Publicaciones.ID + ") ON DELETE CASCADE, " +
+
+                        Imagenes.IMAGE_URL + " TEXT NOT NULL UNIQUE, " +
+                        Imagenes.DISPLAY_ORDER + " INTEGER NOT NULL, " +
+
+                        "UNIQUE(" +
+                        Imagenes.PUBLICACION_ID + "," +
+                        Imagenes.DISPLAY_ORDER + ")" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearFavoritos(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE " + Favoritos.TABLE + " (" +
+
+                        Favoritos.USUARIO_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE +
+                        "(" + Usuarios.ID + ") ON DELETE CASCADE, " +
+
+                        Favoritos.PUBLICACION_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Publicaciones.TABLE +
+                        "(" + Publicaciones.ID + ") ON DELETE CASCADE, " +
+
+                        Favoritos.SAVE_AT +
+                        " TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, " +
+
+                        "PRIMARY KEY(" +
+                        Favoritos.USUARIO_ID + "," +
+                        Favoritos.PUBLICACION_ID + ")" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    // =====================================================
+    // SUBASTAS, PUJAS, COMPRAS Y NOTIFICACIONES
+    // =====================================================
+
+    private void crearTablasVentasYSubastas(SQLiteDatabase db) {
+        crearSubastas(db);
+        crearPujas(db);
+        crearIndicePujas(db);
+        crearCompras(db);
+        crearNotificaciones(db);
+    }
+
+    private void crearSubastas(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Subastas.TABLE + " (" +
+
+                        Subastas.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Subastas.PUBLICACION_ID +
+                        " INTEGER NOT NULL UNIQUE REFERENCES " +
+                        Publicaciones.TABLE +
+                        "(" + Publicaciones.ID + ") ON DELETE CASCADE, " +
+
+                        Subastas.INICIO + " INTEGER NOT NULL, " +
+                        Subastas.FIN + " INTEGER NOT NULL, " +
+
+                        Subastas.MINIMO +
+                        " INTEGER NOT NULL CHECK(" +
+                        Subastas.MINIMO + " > 0), " +
+
+                        Subastas.STATUS +
+                        " TEXT NOT NULL DEFAULT '" +
+                        Subastas.PROGRAMADA + "' CHECK(" +
+                        Subastas.STATUS + " IN ('" +
+                        Subastas.PROGRAMADA + "','" +
+                        Subastas.ACTIVA + "','" +
+                        Subastas.FINALIZADA + "','" +
+                        Subastas.CANCELADA + "')), " +
+
+                        "CHECK(" +
+                        Subastas.FIN + " > " + Subastas.INICIO + ")" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearPujas(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Pujas.TABLE + " (" +
+
+                        Pujas.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Pujas.SUBASTA_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Subastas.TABLE +
+                        "(" + Subastas.ID + ") ON DELETE CASCADE, " +
+
+                        Pujas.POSTOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Pujas.MONTO +
+                        " INTEGER NOT NULL CHECK(" +
+                        Pujas.MONTO + " > 0), " +
+
+                        Pujas.FECHA + " INTEGER NOT NULL" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearIndicePujas(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE INDEX IF NOT EXISTS " +
+                        Pujas.IDX_SUBASTA +
+                        " ON " + Pujas.TABLE + "(" +
+                        Pujas.SUBASTA_ID + "," +
+                        Pujas.MONTO + " DESC," +
+                        Pujas.ID + " DESC)";
+
+        db.execSQL(sql);
+    }
+
+    private void crearCompras(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Compras.TABLE + " (" +
+
+                        Compras.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Compras.PUBLICACION_ID +
+                        " INTEGER NOT NULL UNIQUE REFERENCES " +
+                        Publicaciones.TABLE +
+                        "(" + Publicaciones.ID + "), " +
+
+                        Compras.COMPRADOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Compras.VENDEDOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Compras.PRECIO_ACORDADO +
+                        " REAL NOT NULL CHECK(" +
+                        Compras.PRECIO_ACORDADO + " > 0), " +
+
+                        Compras.FECHA + " INTEGER NOT NULL, " +
+
+                        Compras.STATUS +
+                        " TEXT NOT NULL DEFAULT '" +
+                        Compras.CONFIRMADA + "' CHECK(" +
+                        Compras.STATUS + " IN ('" +
+                        Compras.CONFIRMADA + "','" +
+                        Compras.CANCELADA + "'))" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearNotificaciones(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Notificaciones.TABLE + " (" +
+
+                        Notificaciones.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Notificaciones.USUARIO_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE +
+                        "(" + Usuarios.ID + ") ON DELETE CASCADE, " +
+
+                        Notificaciones.MENSAJE + " TEXT NOT NULL, " +
+
+                        Notificaciones.LEIDA +
+                        " INTEGER NOT NULL DEFAULT " +
+                        Notificaciones.NO_LEIDA + " CHECK(" +
+                        Notificaciones.LEIDA + " IN (" +
+                        Notificaciones.NO_LEIDA + "," +
+                        Notificaciones.LEIDA_SI + ")), " +
+
+                        Notificaciones.FECHA + " INTEGER NOT NULL" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    // =====================================================
+    // CHATS Y MENSAJES
+    // =====================================================
+
+    private void crearTablasChat(SQLiteDatabase db) {
+        crearChats(db);
+        crearMensajes(db);
+        crearIndiceMensajes(db);
+        crearIndicesChats(db);
+    }
+
+    private void crearChats(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Chats.TABLE + " (" +
+
+                        Chats.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Chats.PUBLICACION_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Publicaciones.TABLE +
+                        "(" + Publicaciones.ID + "), " +
+
+                        Chats.COMPRADOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Chats.VENDEDOR_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Chats.CREADO + " INTEGER NOT NULL, " +
+
+                        "UNIQUE(" +
+                        Chats.PUBLICACION_ID + "," +
+                        Chats.COMPRADOR_ID + "), " +
+
+                        "CHECK(" +
+                        Chats.COMPRADOR_ID + " <> " +
+                        Chats.VENDEDOR_ID + ")" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearMensajes(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        Mensajes.TABLE + " (" +
+
+                        Mensajes.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        Mensajes.CHAT_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Chats.TABLE +
+                        "(" + Chats.ID + ") ON DELETE CASCADE, " +
+
+                        Mensajes.REMITENTE_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE + "(" + Usuarios.ID + "), " +
+
+                        Mensajes.TEXTO +
+                        " TEXT NOT NULL CHECK(length(trim(" +
+                        Mensajes.TEXTO + ")) > 0), " +
+
+                        Mensajes.ENVIADO + " INTEGER NOT NULL, " +
+
+                        Mensajes.LEIDO +
+                        " INTEGER NOT NULL DEFAULT " +
+                        Mensajes.NO_LEIDO + " CHECK(" +
+                        Mensajes.LEIDO + " IN (" +
+                        Mensajes.NO_LEIDO + "," +
+                        Mensajes.LEIDO_SI + "))" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearIndiceMensajes(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE INDEX IF NOT EXISTS " +
+                        Mensajes.IDX_CHAT +
+                        " ON " + Mensajes.TABLE + "(" +
+                        Mensajes.CHAT_ID + "," +
+                        Mensajes.ID + ")";
+
+        db.execSQL(sql);
+    }
+
+    private void crearIndicesChats(SQLiteDatabase db) {
+
+        String indiceComprador =
+                "CREATE INDEX IF NOT EXISTS " +
+                        Chats.IDX_COMPRADOR +
+                        " ON " + Chats.TABLE + "(" +
+                        Chats.COMPRADOR_ID + ")";
+
+        String indiceVendedor =
+                "CREATE INDEX IF NOT EXISTS " +
+                        Chats.IDX_VENDEDOR +
+                        " ON " + Chats.TABLE + "(" +
+                        Chats.VENDEDOR_ID + ")";
+
+        db.execSQL(indiceComprador);
+        db.execSQL(indiceVendedor);
+    }
+
+    private void crearIndicesPublicaciones(SQLiteDatabase db) {
+
+        String indiceCategoria =
+                "CREATE INDEX " +
+                        Publicaciones.IDX_CATEGORIA +
+                        " ON " + Publicaciones.TABLE + "(" +
+                        Publicaciones.CATEGORIA_ID + ")";
+
+        String indiceVendedor =
+                "CREATE INDEX " +
+                        Publicaciones.IDX_VENDEDOR +
+                        " ON " + Publicaciones.TABLE + "(" +
+                        Publicaciones.VENDEDOR_ID + ")";
+
+        db.execSQL(indiceCategoria);
+        db.execSQL(indiceVendedor);
+    }
+
+    // =====================================================
+    // CATEGORÍAS INICIALES
+    // =====================================================
+
+    private void insertarCategorias(SQLiteDatabase db) {
+
+        String[] nombres = {
+                "Electrónica",
+                "Hogar",
+                "Vehículos",
+                "Ropa y Accesorios",
+                "Deportes",
+                "Libros",
+                "Juguetes",
+                "Otros"
+        };
+
+        String sql =
+                "INSERT OR IGNORE INTO " +
+                        Categorias.TABLE +
+                        "(" + Categorias.NAME + ") VALUES(?)";
+
+        for (String nombre : nombres) {
+            db.execSQL(sql, new Object[]{nombre});
+        }
+    }
+
+    // =====================================================
+    // MIGRACIONES
+    // =====================================================
+
+    /**
+     * Mantiene las migraciones originales.
+     *
+     * Versión 1 -> 2:
+     * modalidad, subastas, pujas, compras y notificaciones.
+     *
+     * Versión 2 -> 3:
+     * chats y mensajes.
+     */
+    @Override
+    public void onUpgrade(
+            SQLiteDatabase db,
+            int oldVersion,
+            int newVersion
+    ) {
+
         if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE publicaciones ADD COLUMN modalidad TEXT NOT NULL DEFAULT 'VENTA' CHECK(modalidad IN ('VENTA','SUBASTA'))");
-            createNewTables(db);
-            insertCategorias(db);
+
+            String sql =
+                    "ALTER TABLE " + Publicaciones.TABLE +
+                            " ADD COLUMN " + Publicaciones.MODALIDAD +
+                            " TEXT NOT NULL DEFAULT '" +
+                            Publicaciones.VENTA + "' CHECK(" +
+                            Publicaciones.MODALIDAD + " IN ('" +
+                            Publicaciones.VENTA + "','" +
+                            Publicaciones.SUBASTA + "'))";
+
+            db.execSQL(sql);
+
+            crearTablasVentasYSubastas(db);
+            insertarCategorias(db);
         }
-        if (oldVersion < 3) createChatTables(db);
+
+        if (oldVersion < 3) {
+            crearTablasChat(db);
+        }
     }
 
-    public boolean existeColumna(SQLiteDatabase db, String tabla, String columna) {
-        try (Cursor c = db.rawQuery("PRAGMA table_info(" + tabla + ")", null)) {
-            while (c.moveToNext()) if (columna.equals(c.getString(1))) return true;
+    // =====================================================
+    // UTILIDAD DE INSPECCIÓN DEL ESQUEMA
+    // =====================================================
+
+    /**
+     * Comprueba si una columna existe en una tabla.
+     *
+     * Los identificadores deben ser nombres SQLite
+     * válidos. No se reciben valores SQL libres.
+     */
+    public boolean existeColumna(
+            SQLiteDatabase db,
+            String tabla,
+            String columna
+    ) {
+
+        if (tabla == null
+                || columna == null
+                || !tabla.matches("[A-Za-z_][A-Za-z0-9_]*")
+                || !columna.matches("[A-Za-z_][A-Za-z0-9_]*")) {
+
+            throw new IllegalArgumentException(
+                    "Identificador de tabla o columna inválido"
+            );
         }
+
+        String sql = "PRAGMA table_info(" + tabla + ")";
+
+        try (Cursor cursor = db.rawQuery(sql, null)) {
+
+            int indiceNombre = cursor.getColumnIndexOrThrow(
+                    "name"
+            );
+
+            while (cursor.moveToNext()) {
+
+                if (columna.equals(
+                        cursor.getString(indiceNombre)
+                )) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 }
