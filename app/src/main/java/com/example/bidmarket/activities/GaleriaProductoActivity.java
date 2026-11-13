@@ -1,12 +1,10 @@
-package com.example.bidmarket;
+package com.example.bidmarket.activities;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
-import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -17,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.FileProvider;
 
+import com.example.bidmarket.R;
 import com.google.android.material.button.MaterialButton;
 
 import java.io.File;
@@ -28,7 +27,11 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** Editor de hasta diez fotografías. La primera es la portada. */
+/**
+ * Permite agregar fotos desde la galería o la cámara, ordenarlas y quitarlas.
+ * La lista admite hasta diez fotos y usa la primera como portada.
+ * Para confirmar, debe quedar al menos una foto.
+ */
 public class GaleriaProductoActivity extends AppCompatActivity {
     private final ArrayList<String> rutas = new ArrayList<>();
     private final ExecutorService io = Executors.newSingleThreadExecutor();
@@ -37,6 +40,9 @@ public class GaleriaProductoActivity extends AppCompatActivity {
     private File pendienteCamara;
     private boolean busy;
 
+    /**
+     * Recibe las fotos seleccionadas y guarda las que se pueden copiar sin superar el límite.
+     */
     private final ActivityResultLauncher<String> galeria = registerForActivityResult(
         new ActivityResultContracts.GetMultipleContents(), uris -> {
             if (uris == null || uris.isEmpty()) return;
@@ -56,6 +62,9 @@ public class GaleriaProductoActivity extends AppCompatActivity {
             });
         });
 
+    /**
+     * Procesa la foto tomada, elimina el archivo temporal y agrega la copia si se pudo guardar.
+     */
     private final ActivityResultLauncher<Uri> camara = registerForActivityResult(
         new ActivityResultContracts.TakePicture(), ok -> {
             if (pendienteCamara == null) return;
@@ -77,6 +86,12 @@ public class GaleriaProductoActivity extends AppCompatActivity {
             });
         });
 
+    /**
+     * Prepara la pantalla con las rutas recibidas y conecta los botones de la galería.
+     * Al confirmar, devuelve la lista ordenada de rutas a la pantalla que la abrió.
+     *
+     * @param state estado guardado de la pantalla, o {@code null} si no hay uno.
+     */
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_galeria_producto);
@@ -141,6 +156,10 @@ public class GaleriaProductoActivity extends AppCompatActivity {
         mostrar();
     }
 
+    /**
+     * Prepara un archivo temporal y abre la cámara si no hay otra carga en curso
+     * y todavía hay espacio para agregar una foto. Si no puede abrirla, muestra un aviso.
+     */
     private void abrirCamara() {
         if (busy || rutas.size() >= 10) { aviso("Máximo diez imágenes"); return; }
         try {
@@ -152,6 +171,16 @@ public class GaleriaProductoActivity extends AppCompatActivity {
         } catch (Exception ex) { aviso("No se pudo abrir la cámara: " + ex.getMessage()); }
     }
 
+    /**
+     * Lee la imagen, reduce su resolución cuando hace falta y guarda una copia
+     * en formato JPEG dentro del almacenamiento interno de la app.
+     *
+     * @param uri ubicación de la imagen original.
+     * @return ruta absoluta de la copia guardada.
+     * @throws IllegalArgumentException si la imagen no tiene dimensiones válidas o no se puede decodificar.
+     * @throws IllegalStateException si falla la compresión a JPEG.
+     * @throws Exception si ocurre un error al abrir, leer o escribir el archivo.
+     */
     private String copiarRedimensionada(Uri uri) throws Exception {
         BitmapFactory.Options bounds = new BitmapFactory.Options();
         bounds.inJustDecodeBounds = true;
@@ -175,6 +204,10 @@ public class GaleriaProductoActivity extends AppCompatActivity {
         return destino.getAbsolutePath();
     }
 
+    /**
+     * Actualiza el contador y vuelve a dibujar la lista de fotos con sus botones
+     * para moverlas o quitarlas. La primera se marca como portada.
+     */
     private void mostrar() {
         contador.setText(rutas.size() + " / 10 imágenes · La primera es la portada");
         lista.removeAllViews();
@@ -206,6 +239,13 @@ public class GaleriaProductoActivity extends AppCompatActivity {
             lista.addView(fila);
         }
     }
+    /**
+     * Crea un botón para un control de la galería.
+     *
+     * @param titulo texto que se muestra en el botón.
+     * @param accion tarea que se ejecuta al tocar el botón.
+     * @return botón configurado con el texto y la acción.
+     */
     private Button boton(String titulo, Runnable accion) {
         MaterialButton b = new MaterialButton(this);
         b.setText(titulo);
@@ -213,11 +253,27 @@ public class GaleriaProductoActivity extends AppCompatActivity {
         b.setOnClickListener(v -> accion.run());
         return b;
     }
+    /**
+     * Intercambia una foto con la que está en la posición de destino y actualiza la lista.
+     * Si el destino queda fuera de la lista, no hace ningún cambio.
+     *
+     * @param index posición actual de la foto, empezando desde cero.
+     * @param paso desplazamiento desde la posición actual. Se usa {@code -1}
+     *         para subir y {@code 1} para bajar.
+     */
     private void mover(int index, int paso) {
         int otro = index + paso;
         if (otro < 0 || otro >= rutas.size()) return;
         String temp = rutas.get(index); rutas.set(index, rutas.get(otro)); rutas.set(otro, temp); mostrar();
     }
+    /**
+     * Muestra un aviso breve en la pantalla.
+     *
+     * @param texto mensaje que se muestra al usuario.
+     */
     private void aviso(String texto) { Toast.makeText(this, texto, Toast.LENGTH_SHORT).show(); }
+    /**
+     * Deja de aceptar nuevas tareas de procesamiento cuando se destruye la pantalla.
+     */
     @Override protected void onDestroy() { super.onDestroy(); io.shutdown(); }
 }
