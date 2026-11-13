@@ -19,6 +19,11 @@ import com.google.firebase.auth.FirebaseUser;
 import java.util.concurrent.ExecutorService;
 import java.util.function.IntConsumer;
 
+/**
+ * Coordina el acceso con Google y el perfil local de BidMarket+.
+ * Busca un perfil existente, permite completarlo si falta y guarda la sesión
+ * cuando la cuenta de Firebase coincide con la que se está procesando.
+ */
 public final class GoogleLoginFlow {
 
     private final AppCompatActivity activity;
@@ -30,6 +35,14 @@ public final class GoogleLoginFlow {
 
     private boolean ocupado;
 
+    /**
+     * Prepara el flujo de acceso para la pantalla que lo llama.
+     *
+     * @param activity pantalla que muestra el acceso y los avisos.
+     * @param io ejecutor para consultar o guardar perfiles en segundo plano.
+     * @param alEntrar acción que recibe el ID local cuando se completa el acceso.
+     * @param controles vistas que se deshabilitan mientras se procesa el acceso.
+     */
     public GoogleLoginFlow(
             AppCompatActivity activity,
             ExecutorService io,
@@ -43,12 +56,22 @@ public final class GoogleLoginFlow {
         this.repository = new GoogleAccountRepository(activity);
     }
 
+    /**
+     * Inicia el acceso con Google si no hay otro intento en curso y la pantalla
+     * sigue activa. Luego busca el perfil local asociado a la cuenta autenticada.
+     */
     public void iniciar() {
         if (ocupado || !pantallaActiva()) return;
 
         bloquear(true);
 
         new GoogleAuthManager(activity).iniciar(new GoogleAuthManager.Callback() {
+            /**
+             * Busca el perfil de la cuenta autenticada. Si no existe y el correo está
+             * verificado, solicita los datos necesarios para crearlo.
+             *
+             * @param user usuario autenticado en Firebase.
+             */
             @Override
             public void onSuccess(FirebaseUser user) {
                 if (!pantallaActiva()) return;
@@ -85,6 +108,11 @@ public final class GoogleLoginFlow {
                 });
             }
 
+            /**
+             * Desbloquea los controles y muestra el error si la pantalla sigue activa.
+             *
+             * @param mensaje texto que explica por qué falló el acceso.
+             */
             @Override
             public void onError(String mensaje) {
                 enPantalla(() -> fallar(null, mensaje));
@@ -93,8 +121,12 @@ public final class GoogleLoginFlow {
     }
 
     /**
-     * Devuelve true si la sesión guardada era de Google y este flujo
-     * se encarga de comprobarla.
+     * Comprueba que la cuenta activa en Firebase corresponda al ID local guardado.
+     * Si la sesión de Google ya no es válida, la descarta.
+     *
+     * @return {@code true} si la sesión guardada estaba marcada como Google y este
+     *         flujo se encarga de revisarla. No indica que se haya restaurado.
+     *         Devuelve {@code false} si la sesión no estaba marcada como Google.
      */
     public boolean restaurarSiEsGoogle() {
         SharedPreferences prefs = preferencias();
@@ -134,6 +166,12 @@ public final class GoogleLoginFlow {
         return true;
     }
 
+    /**
+     * Pide nombre, nombre de usuario y aceptación de los términos para crear
+     * el perfil local. Comprueba que la cuenta de Google siga siendo la misma.
+     *
+     * @param user cuenta de Firebase cuyo perfil local se va a crear.
+     */
     private void pedirPerfil(FirebaseUser user) {
         String uid = user.getUid();
         String correo = user.getEmail();
@@ -236,6 +274,12 @@ public final class GoogleLoginFlow {
         dialogo.show();
     }
 
+    /**
+     * Guarda el ID local y la marca de acceso con Google, y avisa a la pantalla
+     * que el usuario ya puede entrar.
+     *
+     * @param usuarioId identificador del perfil en la base de datos local.
+     */
     private void entrar(int usuarioId) {
         preferencias().edit()
                 .putInt("usuario_id", usuarioId)
@@ -245,6 +289,10 @@ public final class GoogleLoginFlow {
         alEntrar.accept(usuarioId);
     }
 
+    /**
+     * Cierra la sesión de Firebase, elimina los datos de sesión guardados
+     * y vuelve a mostrar el formulario para que el usuario pueda intentar entrar.
+     */
     private void descartarSesionGoogle() {
         auth.signOut();
         preferencias().edit()
@@ -257,25 +305,52 @@ public final class GoogleLoginFlow {
         avisar("Vuelve a iniciar sesión con Google.");
     }
 
+    /**
+     * Obtiene las preferencias donde se guardan los datos de sesión.
+     *
+     * @return preferencias privadas de la aplicación usadas para la sesión.
+     */
     private SharedPreferences preferencias() {
         return activity.getSharedPreferences("MisPreferencias", Context.MODE_PRIVATE);
     }
 
+    /**
+     * Comprueba que la cuenta activa en Firebase sea la que se está procesando.
+     *
+     * @param uid identificador de Firebase de la cuenta que se quiere comprobar.
+     * @return {@code true} si hay una cuenta activa y su identificador coincide.
+     */
     private boolean esSesionActual(String uid) {
         FirebaseUser actual = auth.getCurrentUser();
         return actual != null && uid.equals(actual.getUid());
     }
 
+    /**
+     * Comprueba si la pantalla todavía puede recibir actualizaciones.
+     *
+     * @return {@code true} si la pantalla no se está cerrando ni fue destruida.
+     */
     private boolean pantallaActiva() {
         return !activity.isFinishing() && !activity.isDestroyed();
     }
 
+    /**
+     * Ejecuta una acción en el hilo de la interfaz si la pantalla sigue activa.
+     *
+     * @param accion tarea que se ejecuta en la pantalla.
+     */
     private void enPantalla(Runnable accion) {
         activity.runOnUiThread(() -> {
             if (pantallaActiva()) accion.run();
         });
     }
 
+    /**
+     * Marca si hay un acceso en curso y habilita o deshabilita los controles.
+     *
+     * @param bloquear {@code true} para deshabilitar los controles, o {@code false}
+     *         para volver a habilitarlos.
+     */
     private void bloquear(boolean bloquear) {
         ocupado = bloquear;
         for (View control : controles) {
@@ -283,12 +358,24 @@ public final class GoogleLoginFlow {
         }
     }
 
+    /**
+     * Termina el intento, desbloquea los controles y muestra un aviso si lo hay.
+     * Solo cierra la sesión de Firebase si coincide con la cuenta indicada.
+     *
+     * @param uid identificador de la cuenta que se quiere cerrar, o {@code null} para no cerrarla.
+     * @param mensaje aviso que se muestra, o {@code null} para no mostrarlo.
+     */
     private void fallar(String uid, String mensaje) {
         if (uid != null && esSesionActual(uid)) auth.signOut();
         bloquear(false);
         if (mensaje != null) avisar(mensaje);
     }
 
+    /**
+     * Muestra un aviso en la pantalla.
+     *
+     * @param mensaje texto que se muestra al usuario.
+     */
     private void avisar(String mensaje) {
         Toast.makeText(activity, mensaje, Toast.LENGTH_LONG).show();
     }
