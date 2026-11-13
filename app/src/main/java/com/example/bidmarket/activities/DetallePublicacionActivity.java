@@ -23,6 +23,11 @@ import com.example.bidmarket.repositories.ImagenesRepository;
 import com.example.bidmarket.repositories.PublicacionRepository;
 import com.example.bidmarket.R;
 
+/**
+ * Muestra la información y las fotos de una publicación de BidMarket+.
+ * Las acciones que aparecen dependen de si el usuario es el dueño, de la
+ * modalidad de venta y del estado de la publicación o de la subasta.
+ */
 public class DetallePublicacionActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private PublicacionRepository repo;
@@ -33,6 +38,10 @@ public class DetallePublicacionActivity extends AppCompatActivity {
     private final java.util.ArrayList<String> fotosDetalle=new java.util.ArrayList<>();
     private int fotoActual=0;
     private android.widget.TextView contadorImagenes;
+    /**
+     * Muestra la foto seleccionada completa, sin recortarla, y actualiza su contador.
+     * Si la publicación no tiene fotos, deja la vista vacía y muestra «Sin imágenes».
+     */
     private void dibujarFoto() {
         ImageView imagen = findViewById(R.id.detImagen);
         imagen.setScaleType(ImageView.ScaleType.FIT_CENTER);
@@ -47,6 +56,10 @@ public class DetallePublicacionActivity extends AppCompatActivity {
             );
     }
 
+    /**
+     * Agrega el contador y permite cambiar de foto tocando la mitad izquierda
+     * o derecha de la imagen. Al llegar a un extremo, sigue por el otro.
+     */
     private void instalarCarrusel() {
         ImageView imagen = findViewById(R.id.detImagen);
 
@@ -93,6 +106,12 @@ public class DetallePublicacionActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Prepara la pantalla, la galería y los botones de la publicación.
+     * Cierra la pantalla si falta un identificador válido de publicación o de usuario.
+     *
+     * @param state estado guardado de la pantalla, o {@code null} si se abre por primera vez.
+     */
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);setContentView(R.layout.activity_detalle_publicacion);
         // Permite que el fondo ocupe toda la pantalla.
@@ -156,7 +175,15 @@ public class DetallePublicacionActivity extends AppCompatActivity {
         }));
         findViewById(R.id.btnMapa).setOnClickListener(v->{Intent i=new Intent(this,MapaActivity.class);i.putExtra("publicacion_id",pubId);startActivity(i);});
     }
+    /**
+     * Recarga el detalle al volver a la pantalla para reflejar los cambios guardados.
+     */
     @Override protected void onResume(){super.onResume();cargar();}
+    /**
+     * Consulta el detalle, las fotos y el estado de la subasta en segundo plano.
+     * Actualiza la vista y decide qué acciones mostrar según el usuario y la
+     * publicación. Si la publicación no existe, cierra la pantalla.
+     */
     private void cargar(){io.execute(()->{
         try(Cursor c=repo.detalle(pubId)){
             if(!c.moveToFirst()){runOnUiThread(this::finish);return;}
@@ -184,14 +211,39 @@ public class DetallePublicacionActivity extends AppCompatActivity {
             });
         }catch(Exception e){runOnUiThread(()->mensaje(e.getMessage()));}
     });}
+    /**
+     * Pide al repositorio cambiar el estado de la publicación y muestra el resultado.
+     * Si el cambio se guarda, cierra la pantalla de detalle.
+     *
+     * @param estado nuevo estado de la publicación, como {@code Pausado},
+     *         {@code Borrado} o {@code Vendido}.
+     */
     private void actualizar(String estado){io.execute(()->{boolean ok=repo.cambiarEstado(pubId,usuarioId,estado);runOnUiThread(()->{mensaje(ok?"Estado actualizado":"No se pudo actualizar");if(ok)finish();});});}
+    /**
+     * Registra la compra en este teléfono, sin procesar pagos ni avisar al
+     * vendedor en otro dispositivo. Si se guarda correctamente, cierra el detalle.
+     */
     private void comprar(){io.execute(()->{try{repo.comprar(pubId,usuarioId);runOnUiThread(()->{mensaje("Compra registrada localmente");finish();});}
         catch(Exception e){runOnUiThread(()->mensaje(e.getMessage()));}});}
+    /**
+     * Lee el monto ingresado y pide al repositorio registrar la puja.
+     * Si el monto no es un entero en CLP, muestra un aviso. Si la puja se guarda,
+     * recarga el detalle para mostrar los datos actualizados.
+     */
     private void pujar(){String valor=((EditText)findViewById(R.id.etMontoPuja)).getText().toString().trim();long monto;
         try{monto=Long.parseLong(valor);}catch(Exception e){mensaje("Ingresa un monto entero en CLP");return;}
         io.execute(()->{try{repo.ofertar(pubId,usuarioId,monto);runOnUiThread(()->{mensaje("Oferta registrada");cargar();});}
             catch(Exception e){runOnUiThread(()->mensaje(e.getMessage()));}});
     }
+    /**
+     * Muestra un aviso breve en la pantalla.
+     *
+     * @param msg texto que se muestra al usuario.
+     */
     private void mensaje(String msg){Toast.makeText(this,msg,Toast.LENGTH_LONG).show();}
+    /**
+     * Deja de aceptar nuevas tareas en el ejecutor cuando se destruye la pantalla.
+     * Las tareas que ya se enviaron pueden terminar.
+     */
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }

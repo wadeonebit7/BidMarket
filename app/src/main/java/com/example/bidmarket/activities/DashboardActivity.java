@@ -32,10 +32,21 @@ import androidx.credentials.exceptions.ClearCredentialException;
 
 import com.google.firebase.auth.FirebaseAuth;
 
+/**
+ * Muestra el catálogo de BidMarket+ en dos columnas.
+ * Desde esta pantalla se puede abrir una publicación, crear una nueva,
+ * revisar los chats y las notificaciones o cerrar sesión.
+ */
 public class DashboardActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private PublicacionRepository repo;
     private PublicacionAdapter adapter;
+    /**
+     * Configura la pantalla, la barra superior y la lista de publicaciones.
+     * También conecta los botones para crear una publicación y revisar los chats.
+     *
+     * @param state estado guardado de la pantalla, o {@code null} si se abre por primera vez.
+     */
     @Override protected void onCreate(Bundle state){
         super.onCreate(state);EdgeToEdge.enable(this);setContentView(R.layout.activity_dashboard);
 
@@ -91,13 +102,31 @@ public class DashboardActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * Vuelve a cargar el catálogo en segundo plano al regresar a esta pantalla.
+     * Si falla la consulta, muestra un aviso sin reemplazar la lista.
+     */
     @Override protected void onResume(){super.onResume();io.execute(()->{
         try{List<Publicacion> pubs=repo.listar();runOnUiThread(()->adapter.reemplazar(pubs));}
         catch(Exception e){runOnUiThread(()->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show());}
     });}
 
+    /**
+     * Agrega las opciones de notificaciones y cierre de sesión al menú superior.
+     *
+     * @param menu menú donde se agregan las opciones del dashboard.
+     * @return {@code true} para indicar que se debe mostrar el menú.
+     */
     @Override public boolean onCreateOptionsMenu(Menu menu){getMenuInflater().inflate(R.menu.menu_dashboard,menu);return true;}
 
+    /**
+     * Abre las notificaciones o inicia el cierre de sesión según la opción elegida.
+     * Las demás opciones se dejan a cargo de la clase base.
+     *
+     * @param item opción que seleccionó el usuario.
+     * @return {@code true} si la opción se atendió aquí. Para las demás opciones,
+     *         devuelve el resultado de la clase base.
+     */
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         if (item.getItemId() == R.id.action_notificaciones) {
@@ -113,6 +142,11 @@ public class DashboardActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+    /**
+     * Cierra la sesión de Firebase, borra los datos de sesión guardados en el
+     * teléfono y solicita limpiar el estado del selector de credenciales.
+     * Después vuelve al inicio de sesión, incluso si falla esa última limpieza.
+     */
     private void cerrarSesion() {
         FirebaseAuth.getInstance().signOut();
 
@@ -127,11 +161,21 @@ public class DashboardActivity extends AppCompatActivity {
                 null,
                 getMainExecutor(),
                 new CredentialManagerCallback<Void, ClearCredentialException>() {
+                    /**
+                     * Vuelve al inicio de sesión cuando se limpia el estado del selector.
+                     *
+                     * @param resultado valor sin contenido, ya que esta operación no devuelve datos.
+                     */
                     @Override
                     public void onResult(Void resultado) {
                         volverAlLogin();
                     }
 
+                    /**
+                     * Registra el problema al limpiar el selector y vuelve al inicio de sesión.
+                     *
+                     * @param error error que informa Credential Manager al limpiar su estado.
+                     */
                     @Override
                     public void onError(ClearCredentialException error) {
                         android.util.Log.w(
@@ -145,6 +189,10 @@ public class DashboardActivity extends AppCompatActivity {
         );
     }
 
+    /**
+     * Abre el inicio de sesión y limpia el historial de pantallas para que
+     * el botón Atrás no vuelva al catálogo. No navega si esta pantalla ya se está cerrando o fue destruida.
+     */
     private void volverAlLogin() {
         if (isFinishing() || isDestroyed()) return;
 
@@ -155,5 +203,9 @@ public class DashboardActivity extends AppCompatActivity {
         finish();
     }
 
+    /**
+     * Deja de aceptar nuevas tareas en el ejecutor cuando se destruye la pantalla.
+     * Las tareas que ya se enviaron pueden terminar.
+     */
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }

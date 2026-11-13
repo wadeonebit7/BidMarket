@@ -13,9 +13,20 @@ import com.example.bidmarket.R;
 import java.util.List;
 import java.util.concurrent.*;
 
+/**
+ * Muestra una conversación de BidMarket+ y permite enviar mensajes.
+ * Usa el ID de la sesión local y el ID del chat para cargar los mensajes.
+ */
 public class ChatActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private ChatRepository repo;private int usuario;private long chatId;
+    /**
+     * Prepara la pantalla y conecta el botón de envío.
+     * Si falta un ID válido de usuario o de conversación, cierra la pantalla.
+     * Al enviar un mensaje correctamente, limpia el campo y recarga la conversación.
+     *
+     * @param s estado guardado por Android, o {@code null} si no hay uno
+     */
     @Override public void onCreate(Bundle s){super.onCreate(s);setContentView(R.layout.activity_chat);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootChat),(v,w)->{Insets i=w.getInsets(WindowInsetsCompat.Type.systemBars());v.setPadding(i.left,i.top,i.right,i.bottom);return w;});
         usuario=getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1);chatId=getIntent().getLongExtra("chat_id",-1);
@@ -23,11 +34,22 @@ public class ChatActivity extends AppCompatActivity {
         findViewById(R.id.btnEnviarMensaje).setOnClickListener(v->{EditText entrada=findViewById(R.id.etMensaje);String txt=entrada.getText().toString();io.execute(()->{try{repo.enviar(chatId,usuario,txt);runOnUiThread(()->{entrada.setText("");cargar();});}catch(Exception e){runOnUiThread(()->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show());}});});
         cargar();
     }
+    /**
+     * Consulta el título y los mensajes en segundo plano.
+     * Distingue los mensajes propios de los recibidos y desplaza la lista al final.
+     * Si falla la consulta, muestra un aviso y cierra la pantalla.
+     *
+     * @throws java.util.concurrent.RejectedExecutionException si el ejecutor
+     *          ya está cerrado y no puede aceptar la tarea de carga
+     */
     private void cargar(){io.execute(()->{try{String titulo=repo.titulo(chatId,usuario);List<ChatRepository.Mensaje> mensajes=repo.mensajes(chatId,usuario);runOnUiThread(()->{
         ((TextView)findViewById(R.id.tituloChat)).setText(titulo);LinearLayout cont=findViewById(R.id.listaMensajes);cont.removeAllViews();
         for(ChatRepository.Mensaje m:mensajes){TextView t=new TextView(this);t.setText(m.texto);t.setTextSize(15);t.setTextColor(m.autor==usuario?0xFFFFFFFF:0xFF202936);t.setPadding(18,12,18,12);t.setBackgroundColor(m.autor==usuario?0xFF202936:0xFFE8EEF4);
           LinearLayout.LayoutParams p=new LinearLayout.LayoutParams(-2,-2);p.gravity=m.autor==usuario?Gravity.END:Gravity.START;p.setMargins(12,8,12,8);cont.addView(t,p);}
         ((ScrollView)findViewById(R.id.scrollMensajes)).post(()->((ScrollView)findViewById(R.id.scrollMensajes)).fullScroll(ScrollView.FOCUS_DOWN));
         });}catch(Exception e){runOnUiThread(()->{Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show();finish();});}});}
+    /**
+     * Cierra el ejecutor de la conversación al destruir la pantalla.
+     */
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }

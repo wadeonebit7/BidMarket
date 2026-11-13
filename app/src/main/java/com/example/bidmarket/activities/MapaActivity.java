@@ -26,7 +26,11 @@ import com.google.android.gms.maps.model.MarkerOptions;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-/** El mapa requiere una API key propia habilitada para Maps SDK for Android. */
+/**
+ * Muestra en el mapa la ubicación de la publicación y, con permiso, la del usuario.
+ * También muestra las lecturas del acelerómetro si el teléfono tiene ese sensor.
+ * El mapa requiere una clave habilitada para Maps SDK for Android.
+ */
 public class MapaActivity extends AppCompatActivity implements SensorEventListener {
     private GoogleMap mapa;
     private final ExecutorService io=Executors.newSingleThreadExecutor();
@@ -35,6 +39,13 @@ public class MapaActivity extends AppCompatActivity implements SensorEventListen
     private Sensor acelerometro;
     private TextView lecturaSensor;
     private final ActivityResultLauncher<String> permiso=registerForActivityResult(new ActivityResultContracts.RequestPermission(),ok->{if(ok)ubicar();else aviso("Sin permiso, se muestra solamente el mapa");});
+    /**
+     * Prepara la pantalla, el servicio de ubicación y el acelerómetro.
+     * Cuando el mapa está listo, solicita la ubicación del usuario y busca
+     * las coordenadas de la publicación.
+     *
+     * @param b estado guardado de la pantalla, o {@code null} si no hay uno.
+     */
     @Override protected void onCreate(Bundle b){
         super.onCreate(b);setContentView(R.layout.activity_mapa);
 
@@ -90,13 +101,26 @@ public class MapaActivity extends AppCompatActivity implements SensorEventListen
         SupportMapFragment frag=(SupportMapFragment)getSupportFragmentManager().findFragmentById(R.id.mapFragment);
         if(frag!=null)frag.getMapAsync(googleMap->{mapa=googleMap;pedirUbicacion();mostrarMarcadorPublicacion();});
     }
+    /**
+     * Busca la ubicación del usuario si el permiso ya está concedido.
+     * Si falta el permiso de ubicación precisa, lo solicita.
+     */
     private void pedirUbicacion(){if(ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)==PackageManager.PERMISSION_GRANTED)ubicar();else permiso.launch(Manifest.permission.ACCESS_FINE_LOCATION);}
+    /**
+     * Activa la capa de ubicación si el mapa está listo y hay permiso.
+     * Si hay una ubicación reciente, agrega un marcador y centra el mapa en ella.
+     * Si no hay una ubicación reciente o falla la consulta, muestra un aviso.
+     */
     @SuppressWarnings("MissingPermission") private void ubicar(){
         if(mapa==null||ContextCompat.checkSelfPermission(this,Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)return;
         mapa.setMyLocationEnabled(true);
         fused.getLastLocation().addOnSuccessListener(this,loc->{if(loc!=null){LatLng ll=new LatLng(loc.getLatitude(),loc.getLongitude());mapa.addMarker(new MarkerOptions().position(ll).title("Mi ubicación"));mapa.animateCamera(CameraUpdateFactory.newLatLngZoom(ll,13));}
             else aviso("No hay ubicación reciente; activa GPS y vuelve a intentar");}).addOnFailureListener(this,e->aviso("No se pudo leer el GPS"));
     }
+    /**
+     * Busca las coordenadas de la publicación en segundo plano.
+     * Si existen, agrega un marcador con su título y centra el mapa en ese punto.
+     */
     private void mostrarMarcadorPublicacion(){
         long id=getIntent().getLongExtra("publicacion_id",-1);if(id<=0)return;
         io.execute(()->{try(android.database.Cursor c=new PublicacionRepository(this).detalle(id)){
@@ -106,10 +130,36 @@ public class MapaActivity extends AppCompatActivity implements SensorEventListen
             }
         }});
     }
+    /**
+     * Muestra un aviso en la pantalla.
+     *
+     * @param s texto del aviso que se muestra al usuario.
+     */
     private void aviso(String s){Toast.makeText(this,s,Toast.LENGTH_LONG).show();}
+    /**
+     * Empieza a recibir lecturas si el teléfono tiene acelerómetro.
+     */
     @Override protected void onResume(){super.onResume();if(acelerometro!=null)sensores.registerListener(this,acelerometro,SensorManager.SENSOR_DELAY_NORMAL);}
+    /**
+     * Deja de escuchar el acelerómetro al pausar la pantalla.
+     */
     @Override protected void onPause(){super.onPause();sensores.unregisterListener(this);}
+    /**
+     * Actualiza la lectura de los ejes X, Y y Z en metros por segundo al cuadrado.
+     * Ignora los eventos que no vienen del acelerómetro.
+     *
+     * @param e evento con el sensor de origen y los valores de la lectura.
+     */
     @Override public void onSensorChanged(SensorEvent e){if(e.sensor.getType()==Sensor.TYPE_ACCELEROMETER)lecturaSensor.setText(String.format(java.util.Locale.getDefault(),"Acelerómetro: X %.1f · Y %.1f · Z %.1f m/s²",e.values[0],e.values[1],e.values[2]));}
+    /**
+     * Recibe los cambios de precisión del sensor sin modificar la pantalla.
+     *
+     * @param s sensor cuya precisión cambió.
+     * @param accuracy nuevo nivel de precisión informado por Android.
+     */
     @Override public void onAccuracyChanged(Sensor s,int accuracy){}
+    /**
+     * Deja de aceptar nuevas tareas de consulta cuando se destruye la pantalla.
+     */
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }

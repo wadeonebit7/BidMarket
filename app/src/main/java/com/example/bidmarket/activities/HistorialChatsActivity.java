@@ -13,15 +13,33 @@ import com.example.bidmarket.R;
 import java.util.List;
 import java.util.concurrent.*;
 
+/**
+ * Muestra las conversaciones del usuario que tiene la sesión abierta.
+ * Cada fila muestra el título de la publicación, la otra persona y el último mensaje.
+ */
 public class HistorialChatsActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private ChatRepository repo;private int usuario;
+    /**
+     * Prepara la pantalla y el repositorio de chats. Si no hay un identificador
+     * de usuario válido en la sesión, cierra la pantalla.
+     *
+     * @param s estado guardado de la pantalla, o {@code null} si no hay uno.
+     */
     @Override public void onCreate(Bundle s){super.onCreate(s);setContentView(R.layout.activity_historial_chats);
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.rootHistorial),(v,w)->{Insets i=w.getInsets(WindowInsetsCompat.Type.systemBars());v.setPadding(i.left,i.top,i.right,i.bottom);return w;});
         usuario=getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1);if(usuario<=0){finish();return;}
         repo=new ChatRepository(this);
     }
+    /**
+     * Recarga el historial cada vez que la pantalla vuelve al primer plano.
+     */
     @Override protected void onResume(){super.onResume();cargar();}
+    /**
+     * Consulta las conversaciones en segundo plano y actualiza la lista.
+     * Al tocar una fila, abre el chat con su identificador. Si no hay conversaciones,
+     * muestra un aviso en la pantalla. Si la consulta falla, muestra el error.
+     */
     private void cargar(){io.execute(()->{try{List<ChatRepository.Entrada> entradas=repo.historial(usuario);runOnUiThread(()->{
         LinearLayout cont=findViewById(R.id.listaChats);cont.removeAllViews();
         ((TextView)findViewById(R.id.txtChatsVacios)).setText(entradas.isEmpty()?"Todavía no tienes conversaciones.":"");
@@ -29,5 +47,8 @@ public class HistorialChatsActivity extends AppCompatActivity {
           LinearLayout.LayoutParams lp=new LinearLayout.LayoutParams(-1,-2);lp.bottomMargin=12;cont.addView(item,lp);
           item.setOnClickListener(v->{Intent in=new Intent(this,ChatActivity.class);in.putExtra("chat_id",e.id);startActivity(in);});}
         });}catch(Exception ex){runOnUiThread(()->Toast.makeText(this,ex.getMessage(),Toast.LENGTH_LONG).show());}});}
+    /**
+     * Deja de aceptar nuevas tareas de carga cuando se destruye la pantalla.
+     */
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }
