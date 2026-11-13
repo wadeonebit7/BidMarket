@@ -20,22 +20,26 @@ import com.example.bidmarket.database.BidMarketContract.Mensajes;
 import com.example.bidmarket.database.BidMarketContract.AuthIdentities;
 
 /**
- * Administra el esquema SQLite de BidMarket+.
- *
- * Responsabilidades:
- * - Crear tablas, restricciones e índices.
- * - Habilitar la integridad referencial.
- * - Insertar categorías iniciales.
- * - Ejecutar migraciones entre versiones.
- *
- * Los identificadores del esquema se obtienen
- * desde BidMarketContract.
+ * Administra el esquema SQLite de BidMarket+. Crea las tablas, restricciones
+ * e índices, carga las categorías iniciales y aplica las migraciones necesarias.
+ * Usa los nombres de tablas y columnas definidos en {@link BidMarketContract}.
  */
 public final class BidMarketDbHelper extends SQLiteOpenHelper {
 
+    /**
+     * Nombre del archivo de la base de datos local.
+     */
     public static final String DATABASE_NAME = "bidmarket.db";
+    /**
+     * Versión del esquema que usa la aplicación.
+     */
     public static final int DATABASE_VERSION = 4;
 
+    /**
+     * Prepara el acceso a la base de datos local con su nombre y versión.
+     *
+     * @param context contexto que Android usa para abrir o crear el archivo SQLite.
+     */
     public BidMarketDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
     }
@@ -44,6 +48,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // CONFIGURACIÓN
     // =====================================================
 
+    /**
+     * Activa las claves foráneas antes de crear, migrar o abrir la base de datos.
+     *
+     * @param db base de datos que se va a configurar.
+     */
     @Override
     public void onConfigure(SQLiteDatabase db) {
         super.onConfigure(db);
@@ -54,6 +63,13 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // CREACIÓN INICIAL
     // =====================================================
 
+    /**
+     * Crea las tablas y los índices e inserta las categorías iniciales al abrir
+     * la base de datos por primera vez.
+     *
+     * @param db base de datos recién creada.
+     * @throws android.database.sqlite.SQLiteException si SQLite no puede aplicar el esquema o insertar las categorías.
+     */
     @Override
     public void onCreate(SQLiteDatabase db) {
         crearCuentas(db);
@@ -71,6 +87,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         insertarCategorias(db);
     }
 
+    /**
+     * Crea la tabla de cuentas con el estado, el hash de la contraseña y las reglas de
+     * unicidad del correo y del nombre de usuario.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearCuentas(SQLiteDatabase db) {
 
         String sql =
@@ -93,6 +115,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla de perfiles locales y vincula cada perfil con una cuenta.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearUsuarios(SQLiteDatabase db) {
 
         String sql =
@@ -112,6 +139,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla de categorías y evita nombres duplicados.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearCategorias(SQLiteDatabase db) {
 
         String sql =
@@ -123,6 +155,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla del catálogo con su vendedor, categoría, precio, estado, modalidad y
+     * datos de ubicación.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearPublicaciones(SQLiteDatabase db) {
 
         String sql =
@@ -195,6 +233,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla de imágenes y evita que dos imágenes de una publicación ocupen la
+     * misma posición.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearImagenes(SQLiteDatabase db) {
 
         String sql =
@@ -220,6 +264,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla que relaciona a cada usuario con sus publicaciones favoritas.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearFavoritos(SQLiteDatabase db) {
 
         String sql =
@@ -251,6 +300,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // SUBASTAS, PUJAS, COMPRAS Y NOTIFICACIONES
     // =====================================================
 
+    /**
+     * Prepara las tablas de subastas, pujas, compras y avisos, junto con el índice de
+     * pujas.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearTablasVentasYSubastas(SQLiteDatabase db) {
         crearSubastas(db);
         crearPujas(db);
@@ -259,6 +314,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         crearNotificaciones(db);
     }
 
+    /**
+     * Crea la tabla que guarda los plazos y el estado de una subasta vinculada a una
+     * publicación.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearSubastas(SQLiteDatabase db) {
 
         String sql =
@@ -297,6 +358,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla que guarda el usuario, el monto y la fecha de cada puja.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearPujas(SQLiteDatabase db) {
 
         String sql =
@@ -326,6 +392,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea un índice por subasta, monto descendente e ID descendente para consultar las
+     * pujas de mayor monto.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearIndicePujas(SQLiteDatabase db) {
 
         String sql =
@@ -339,6 +411,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla de compras para registrar la publicación, el comprador y los datos de
+     * la operación.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearCompras(SQLiteDatabase db) {
 
         String sql =
@@ -379,6 +457,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla de avisos locales y su estado de lectura.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearNotificaciones(SQLiteDatabase db) {
 
         String sql =
@@ -413,6 +496,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // CHATS Y MENSAJES
     // =====================================================
 
+    /**
+     * Prepara las tablas de chats y mensajes junto con sus índices.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearTablasChat(SQLiteDatabase db) {
         crearChats(db);
         crearMensajes(db);
@@ -420,6 +508,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         crearIndicesChats(db);
     }
 
+    /**
+     * Crea la tabla de conversaciones entre comprador y vendedor asociadas a una
+     * publicación.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearChats(SQLiteDatabase db) {
 
         String sql =
@@ -457,6 +551,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla que guarda el contenido y el estado de lectura de los mensajes de cada
+     * chat.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearMensajes(SQLiteDatabase db) {
 
         String sql =
@@ -493,6 +593,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea la tabla que vincula a un usuario local con el identificador de su proveedor de
+     * acceso.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearTablaIdentidades(SQLiteDatabase db) {
 
         String sql =
@@ -526,6 +632,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea un índice por chat e ID para consultar los mensajes de una conversación.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearIndiceMensajes(SQLiteDatabase db) {
 
         String sql =
@@ -538,6 +649,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    /**
+     * Crea índices para buscar conversaciones por comprador o por vendedor.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearIndicesChats(SQLiteDatabase db) {
 
         String indiceComprador =
@@ -556,6 +672,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(indiceVendedor);
     }
 
+    /**
+     * Crea índices para consultar publicaciones por categoría o por vendedor.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void crearIndicesPublicaciones(SQLiteDatabase db) {
 
         String indiceCategoria =
@@ -578,6 +699,11 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // CATEGORÍAS INICIALES
     // =====================================================
 
+    /**
+     * Carga las categorías iniciales sin duplicar las que ya existen.
+     *
+     * @param db base de datos donde se aplica el cambio.
+     */
     private void insertarCategorias(SQLiteDatabase db) {
 
         String[] nombres = {
@@ -606,13 +732,15 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // =====================================================
 
     /**
-     * Mantiene las migraciones originales.
+     * Aplica los cambios pendientes según la versión instalada, sin recrear toda
+     * la base de datos. La versión 2 incorpora la modalidad de venta, las subastas,
+     * las pujas, las compras y los avisos. La versión 3 agrega chats y mensajes.
+     * La versión 4 agrega las identidades de los proveedores de acceso.
      *
-     * Versión 1 -> 2:
-     * modalidad, subastas, pujas, compras y notificaciones.
-     *
-     * Versión 2 -> 3:
-     * chats y mensajes.
+     * @param db base de datos existente que se va a actualizar.
+     * @param oldVersion versión del esquema instalada antes de la actualización.
+     * @param newVersion versión de destino solicitada por Android.
+     * @throws android.database.sqlite.SQLiteException si falla alguna operación de la migración.
      */
     @Override
     public void onUpgrade(
@@ -651,10 +779,17 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
     // =====================================================
 
     /**
-     * Comprueba si una columna existe en una tabla.
+     * Consulta el esquema de una tabla para comprobar si contiene una columna
+     * con el nombre exacto indicado.
      *
-     * Los identificadores deben ser nombres SQLite
-     * válidos. No se reciben valores SQL libres.
+     * @param db base de datos que se quiere consultar.
+     * @param tabla nombre de la tabla.
+     * @param columna nombre de la columna, respetando mayúsculas y minúsculas.
+     * @return {@code true} si la columna existe, o {@code false} si no se encuentra.
+     * @throws IllegalArgumentException si un nombre es nulo o no cumple el
+     *         formato admitido. Debe empezar con una letra de A a Z o guion bajo
+     *         y después solo puede contener letras de A a Z, dígitos o guiones bajos.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta del esquema.
      */
     public boolean existeColumna(
             SQLiteDatabase db,
