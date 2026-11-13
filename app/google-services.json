@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "568640369003",
+    "project_id": "bidmarket-fd950",
+    "storage_bucket": "bidmarket-fd950.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:568640369003:android:faeb6fd59f0aa5d6f91c2e",
+        "android_client_info": {
+          "package_name": "com.example.bidmarket"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "568640369003-fs8ahlehifjq86bvf6st7mrukvvvf5ui.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.bidmarket",
+            "certificate_hash": "f99849ab2390c51b45cf9f399a7f226d290954ed"
+          }
+        },
+        {
+          "client_id": "568640369003-58n64mqunnsgf0p2k7qrmt8ear7u5or2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO2JDqTvlfpUZ56NpXPjaOK5lclIHZJA0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "568640369003-58n64mqunnsgf0p2k7qrmt8ear7u5or2.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

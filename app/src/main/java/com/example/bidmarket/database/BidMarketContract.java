@@ -305,4 +305,22 @@ public final class BidMarketContract {
         public static final int NO_LEIDO = 0;
         public static final int LEIDO_SI = 1;
     }
+
+    // =====================================================
+    // AUTHIDENTITIES
+    // =====================================================
+
+    public static final class AuthIdentities {
+
+        private AuthIdentities() {}
+
+        public static final String TABLE = "auth_identities";
+
+        public static final String ID = "id";
+        public static final String USUARIO_ID = "usuario_id";
+        public static final String PROVIDER = "provider";
+        public static final String PROVIDER_UID = "provider_uid";
+
+        public static final String GOOGLE = "GOOGLE";
+    }
 }

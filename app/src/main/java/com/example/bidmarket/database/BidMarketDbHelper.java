@@ -17,6 +17,7 @@ import com.example.bidmarket.database.BidMarketContract.Compras;
 import com.example.bidmarket.database.BidMarketContract.Notificaciones;
 import com.example.bidmarket.database.BidMarketContract.Chats;
 import com.example.bidmarket.database.BidMarketContract.Mensajes;
+import com.example.bidmarket.database.BidMarketContract.AuthIdentities;
 
 /**
  * Administra el esquema SQLite de BidMarket+.
@@ -33,7 +34,7 @@ import com.example.bidmarket.database.BidMarketContract.Mensajes;
 public final class BidMarketDbHelper extends SQLiteOpenHelper {
 
     public static final String DATABASE_NAME = "bidmarket.db";
-    public static final int DATABASE_VERSION = 3;
+    public static final int DATABASE_VERSION = 4;
 
     public BidMarketDbHelper(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -64,6 +65,7 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
 
         crearTablasVentasYSubastas(db);
         crearTablasChat(db);
+        crearTablaIdentidades(db);
 
         crearIndicesPublicaciones(db);
         insertarCategorias(db);
@@ -491,6 +493,39 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
         db.execSQL(sql);
     }
 
+    private void crearTablaIdentidades(SQLiteDatabase db) {
+
+        String sql =
+                "CREATE TABLE IF NOT EXISTS " +
+                        AuthIdentities.TABLE + " (" +
+
+                        AuthIdentities.ID +
+                        " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+
+                        AuthIdentities.USUARIO_ID +
+                        " INTEGER NOT NULL REFERENCES " +
+                        Usuarios.TABLE +
+                        "(" + Usuarios.ID + ") ON DELETE CASCADE, " +
+
+                        AuthIdentities.PROVIDER +
+                        " TEXT NOT NULL, " +
+
+                        AuthIdentities.PROVIDER_UID +
+                        " TEXT NOT NULL, " +
+
+                        "UNIQUE(" +
+                        AuthIdentities.PROVIDER + ", " +
+                        AuthIdentities.PROVIDER_UID + "), " +
+
+                        "UNIQUE(" +
+                        AuthIdentities.USUARIO_ID + ", " +
+                        AuthIdentities.PROVIDER + ")" +
+
+                        ")";
+
+        db.execSQL(sql);
+    }
+
     private void crearIndiceMensajes(SQLiteDatabase db) {
 
         String sql =
@@ -602,9 +637,12 @@ public final class BidMarketDbHelper extends SQLiteOpenHelper {
             crearTablasVentasYSubastas(db);
             insertarCategorias(db);
         }
-
         if (oldVersion < 3) {
             crearTablasChat(db);
+        }
+
+        if (oldVersion < 4) {
+            crearTablaIdentidades(db);
         }
     }
 

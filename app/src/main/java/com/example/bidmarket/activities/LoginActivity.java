@@ -17,11 +17,13 @@ import androidx.core.view.WindowCompat;
 import com.example.bidmarket.repositories.AuthRepository;
 import com.example.bidmarket.R;
 
+import android.widget.Toast;
+import com.example.bidmarket.auth.GoogleLoginFlow;
+
 public class LoginActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private EditText correo,contrasena;private Button ingresar;
     @Override protected void onCreate(Bundle state){super.onCreate(state);
-        if(getSharedPreferences("MisPreferencias",MODE_PRIVATE).getInt("usuario_id",-1)>0){abrir();return;}
         getWindow().setFlags(android.view.WindowManager.LayoutParams.FLAG_SECURE,android.view.WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_login);
 
@@ -41,6 +43,16 @@ public class LoginActivity extends AppCompatActivity {
         ).setAppearanceLightNavigationBars(true);
 
         View root = findViewById(R.id.main);
+
+        android.content.SharedPreferences prefs =
+                getSharedPreferences("MisPreferencias", MODE_PRIVATE);
+
+        boolean haySesionGuardada = prefs.getInt("usuario_id", -1) > 0
+                || "GOOGLE".equals(prefs.getString("auth_provider", ""));
+
+        if (haySesionGuardada) {
+            root.setVisibility(View.INVISIBLE);
+        }
 
         ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
             Insets barras = insets.getInsets(
@@ -62,6 +74,31 @@ public class LoginActivity extends AppCompatActivity {
 
         correo=findViewById(R.id.etCorreoLogin);contrasena=findViewById(R.id.etPasswordLogin);ingresar=findViewById(R.id.btnIngresar);
         ingresar.setOnClickListener(v->login());
+        findViewById(R.id.tvIrRegistro).setOnClickListener(v -> {
+            Intent intent = new Intent(this, RegisterActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            startActivity(intent);
+            finish();
+        });
+
+        View botonGoogle = findViewById(R.id.btnGoogleLogin);
+
+        GoogleLoginFlow flujoGoogle = new GoogleLoginFlow(
+                this,
+                io,
+                id -> abrir(),
+                botonGoogle,
+                ingresar,
+                findViewById(R.id.tvIrRegistro)
+        );
+
+        botonGoogle.setOnClickListener(v -> flujoGoogle.iniciar());
+
+        if (!flujoGoogle.restaurarSiEsGoogle()
+                && getSharedPreferences("MisPreferencias", MODE_PRIVATE)
+                .getInt("usuario_id", -1) > 0) {
+            abrir();
+        }
     }
     private void login(){String email=correo.getText().toString().trim(),pass=contrasena.getText().toString();
         if(email.isEmpty()||pass.isEmpty()){mensaje("Ingresa correo y contraseña");return;}
@@ -82,7 +119,10 @@ public class LoginActivity extends AppCompatActivity {
                 ingresar.setEnabled(true);
                 if (usuarioId > 0) {
                     getSharedPreferences("MisPreferencias", MODE_PRIVATE)
-                            .edit().putInt("usuario_id", usuarioId).apply();
+                            .edit()
+                            .putInt("usuario_id", usuarioId)
+                            .remove("auth_provider")
+                            .apply();
                     abrir();
                 } else {
                     mensaje(mensajeError);
