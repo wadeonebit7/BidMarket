@@ -22,6 +22,10 @@ import com.example.bidmarket.repositories.AuthRepository;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.firebase.auth.FirebaseUser;
+import com.example.bidmarket.auth.GoogleAuthManager;
+import com.example.bidmarket.auth.GoogleLoginFlow;
+
 public final class RegisterActivity extends AppCompatActivity {
     private final ExecutorService io = Executors.newSingleThreadExecutor();
     private EditText correo, nombre, usuario, pass, confirmacion;
@@ -35,6 +39,26 @@ public final class RegisterActivity extends AppCompatActivity {
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
         setContentView(R.layout.activity_register);
+
+        View botonGoogle = findViewById(R.id.btnGoogleRegistro);
+
+        GoogleLoginFlow flujoGoogle = new GoogleLoginFlow(
+                this,
+                io,
+                id -> {
+                    Intent intent = new Intent(this, DashboardActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                            | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                    startActivity(intent);
+                    finish();
+                },
+                botonGoogle,
+                findViewById(R.id.btnContinuarCorreo),
+                findViewById(R.id.tvIrLogin)
+        );
+
+        botonGoogle.setOnClickListener(v -> flujoGoogle.iniciar());
+
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
             v.setPadding(bars.left, bars.top, bars.right, bars.bottom);
@@ -76,7 +100,6 @@ public final class RegisterActivity extends AppCompatActivity {
         crear.setOnClickListener(v -> registrar());
         volver.setOnClickListener(v -> { if (!registrando && paso > 0) mostrarPaso(paso - 1); });
         findViewById(R.id.tvIrLogin).setOnClickListener(v -> navegarLogin());
-        findViewById(R.id.btnGoogleRegistro).setOnClickListener(v -> googleNoConfigurado());
 
         if (state != null) paso = Math.max(0, Math.min(2, state.getInt("registro_paso", 0)));
         mostrarPaso(paso);
@@ -142,9 +165,6 @@ public final class RegisterActivity extends AppCompatActivity {
         intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         startActivity(intent);
         finish();
-    }
-    private void googleNoConfigurado() {
-        mensaje("Google requiere configurar Credential Manager y Firebase Authentication");
     }
     private void mensaje(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
     @Override protected void onSaveInstanceState(Bundle out) {

@@ -25,6 +25,13 @@ import android.graphics.Color;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.core.view.WindowCompat;
 
+import androidx.credentials.ClearCredentialStateRequest;
+import androidx.credentials.CredentialManager;
+import androidx.credentials.CredentialManagerCallback;
+import androidx.credentials.exceptions.ClearCredentialException;
+
+import com.google.firebase.auth.FirebaseAuth;
+
 public class DashboardActivity extends AppCompatActivity {
     private final ExecutorService io=Executors.newSingleThreadExecutor();
     private PublicacionRepository repo;
@@ -83,16 +90,70 @@ public class DashboardActivity extends AppCompatActivity {
             startActivity(intent);
         });
     }
+
     @Override protected void onResume(){super.onResume();io.execute(()->{
         try{List<Publicacion> pubs=repo.listar();runOnUiThread(()->adapter.reemplazar(pubs));}
         catch(Exception e){runOnUiThread(()->Toast.makeText(this,e.getMessage(),Toast.LENGTH_LONG).show());}
     });}
+
     @Override public boolean onCreateOptionsMenu(Menu menu){getMenuInflater().inflate(R.menu.menu_dashboard,menu);return true;}
-    @Override public boolean onOptionsItemSelected(MenuItem item){
-        if(item.getItemId()==R.id.action_notificaciones){startActivity(new Intent(this,NotificacionesActivity.class));return true;}
-        if(item.getItemId()==R.id.action_logout){
-        getSharedPreferences("MisPreferencias",MODE_PRIVATE).edit().clear().apply();
-        Intent intent=new Intent(this,LoginActivity.class);intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TASK);startActivity(intent);finish();return true;
-    }return super.onOptionsItemSelected(item);}
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_notificaciones) {
+            startActivity(new Intent(this, NotificacionesActivity.class));
+            return true;
+        }
+
+        if (item.getItemId() == R.id.action_logout) {
+            cerrarSesion();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    private void cerrarSesion() {
+        FirebaseAuth.getInstance().signOut();
+
+        getSharedPreferences("MisPreferencias", MODE_PRIVATE)
+                .edit()
+                .remove("usuario_id")
+                .remove("auth_provider")
+                .apply();
+
+        CredentialManager.create(this).clearCredentialStateAsync(
+                new ClearCredentialStateRequest(),
+                null,
+                getMainExecutor(),
+                new CredentialManagerCallback<Void, ClearCredentialException>() {
+                    @Override
+                    public void onResult(Void resultado) {
+                        volverAlLogin();
+                    }
+
+                    @Override
+                    public void onError(ClearCredentialException error) {
+                        android.util.Log.w(
+                                "BidMarketAuth",
+                                "No se pudo limpiar el estado del selector",
+                                error
+                        );
+                        volverAlLogin();
+                    }
+                }
+        );
+    }
+
+    private void volverAlLogin() {
+        if (isFinishing() || isDestroyed()) return;
+
+        Intent intent = new Intent(this, LoginActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        startActivity(intent);
+        finish();
+    }
+
     @Override protected void onDestroy(){super.onDestroy();io.shutdown();}
 }
