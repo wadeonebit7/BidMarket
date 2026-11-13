@@ -1,6 +1,26 @@
 # BidMarket+
 
-BidMarketPlus es una aplicación Android para publicar, comprar y vender productos de dos formas: **venta directa a precio fijo** y **subasta**. El objetivo es que el vendedor pueda crear una publicación con fotos y que el comprador pueda elegir entre comprar al precio indicado o hacer una oferta.
+BidMarketPlus es una aplicación Android para publicar, comprar y vender productos de dos formas: venta directa a precio fijo y subasta. El objetivo es que el vendedor pueda crear una publicación con fotos y que el comprador pueda elegir entre comprar al precio indicado o hacer una oferta.
+
+## Ficha del proyecto
+
+| Dato | Detalle |
+| --- | --- |
+| Autor | Walter Valenzuela |
+| Asignatura | Programación Android |
+| Docente | Leopoldo Rodriguez |
+| Institución | Instituto Profesional Santo Tomás, sede Iquique |
+| Tipo de proyecto | Aplicación móvil académica |
+| Compatibilidad | Android 11 o superior (API 30+) |
+
+## Capturas de la app
+
+La galería está preparada para mostrar el catálogo, el detalle de una publicación y una subasta en curso.
+
+| Catálogo | Detalle de publicación | Subasta |
+| :---: | :---: | :---: |
+| <img src="docs/capturas/catalogo.png" width="230" alt="Catálogo de productos de BidMarket+"> | <img src="docs/capturas/detalle-publicacion.png" width="230" alt="Detalle y fotografías de una publicación"> | <img src="docs/capturas/subasta.png" width="230" alt="Detalle de una subasta con opción de pujar"> |
+| Vista general de los productos activos. | Fotos, precio y datos del producto. | Precio inicial, mayor oferta y formulario de puja. |
 
 ## Funciones principales
 
@@ -13,18 +33,29 @@ BidMarketPlus es una aplicación Android para publicar, comprar y vender product
 
 > **Alcance actual.** Las publicaciones, las compras, las pujas, los chats y los avisos se guardan en SQLite en el dispositivo. El acceso con Google usa Firebase Authentication, pero eso no sincroniza los datos entre teléfonos. La app no procesa pagos ni envía notificaciones push.
 
-## Tecnologías y organización
+## Tecnologías y requisitos
 
-El proyecto está desarrollado en **Java** con Android Studio. La interfaz usa **XML y Material Design**. Gradle administra la compilación, **SQLiteOpenHelper** administra la base de datos y **Credential Manager** conecta el acceso con Google a Firebase Authentication. Para el mapa y la ubicación se usan **Maps SDK for Android** y **Fused Location Provider**.
+- **Lenguaje y entorno.** Java y Android Studio, con Gradle para la compilación.
+- **SDK de Android.** Mínimo API 30 (Android 11). El proyecto está configurado para compilar y apuntar a la API 37.
+- **Interfaz.** Diseños en XML con componentes de Material Design. El catálogo usa `RecyclerView` para mostrar las publicaciones en dos columnas.
+- **Base de datos local.** SQLite, administrada con `SQLiteOpenHelper` para crear y actualizar el esquema.
+- **Autenticación.** Acceso local con correo y contraseña. El acceso con Google usa Credential Manager y Firebase Authentication, y se vincula a un perfil local.
+- **Cámara y galería.** `ActivityResultLauncher` gestiona la captura y selección de fotos. `FileProvider` permite compartir con la cámara una URI de contenido en lugar de exponer la ruta del archivo.
+- **Mapas y ubicación.** Maps SDK for Android muestra las ubicaciones y Fused Location Provider obtiene la ubicación del dispositivo.
+
+## Organización del código
+
+BidMarket+ usa varias `Activities` para separar las pantallas de acceso, catálogo y gestión de publicaciones. Las pantallas delegan las consultas y las operaciones de guardado a los repositorios, que usan el contrato de SQLite para acceder a los datos.
 
 | Paquete | Responsabilidad |
 | --- | --- |
-| `activities` | Pantallas y navegación de la app. |
-| `adapters` y `models` | Presentación de las tarjetas y datos del catálogo. |
-| `auth` | Acceso con Google y vínculo con el perfil local. |
-| `repositories` | Consultas y operaciones sobre los datos de la app. |
-| `database` | Contrato, creación y migraciones de SQLite. |
-| `utils` | Generación y verificación de hashes de contraseñas. |
+| `activities` | Pantallas, navegación y acciones del usuario. |
+| `adapters` | Vincula los datos de las publicaciones con las tarjetas del catálogo. |
+| `models` | Representa los datos que usa la app, como una publicación. |
+| `auth` | Gestiona el acceso con Google y su vínculo con el perfil local. |
+| `repositories` | Consulta y guarda cuentas, publicaciones, fotos, chats y avisos en SQLite. |
+| `database` | Define las tablas y columnas, crea el esquema y aplica las migraciones. |
+| `utils` | Genera y verifica los hashes de las contraseñas locales. |
 
 ## Instalación y ejecución
 
@@ -51,11 +82,20 @@ El proyecto está desarrollado en **Java** con Android Studio. La interfaz usa *
 - Las contraseñas locales se guardan como hashes **PBKDF2**, no como texto plano.
 - Las pantallas internas no se exportan a otras apps. La cámara recibe una URI de contenido mediante `FileProvider` y el inicio de sesión aplica `FLAG_SECURE` para bloquear capturas.
 
-## Documentación técnica
+## Flujo de pantallas
 
-- [Diagramas de navegación y flujo](docs/diagramas.md)
+Desde la bienvenida, el usuario puede iniciar sesión o registrarse. Al entrar al catálogo, puede abrir el detalle de un producto, crear una publicación o consultar sus chats y avisos. En el detalle se muestran las acciones que corresponden a la modalidad y al estado de la publicación.
+
+Consulta los [diagramas de navegación y flujo](docs) para ver los recorridos de acceso, publicación, venta directa y subasta.
+
+## Base de datos y documentación del código
+
+SQLite relaciona las cuentas y perfiles con sus publicaciones. Las fotografías tienen un orden de presentación, y las subastas y pujas se registran por separado de las compras directas. El esquema también guarda las conversaciones y los avisos locales.
+
 - [Contrato de tablas y columnas de SQLite](app/src/main/java/com/example/bidmarket/database/BidMarketContract.java)
 - [Creación y migraciones de la base de datos](app/src/main/java/com/example/bidmarket/database/BidMarketDbHelper.java)
 - [Código fuente con JavaDoc](app/src/main/java/com/example/bidmarket)
 
-El modelo entidad-relación actualizado se incorporará cuando esté listo. Mientras tanto, el contrato y el helper son la referencia del esquema implementado.
+<p align="center">
+  <img src="docs/mer-sqlite.png" width="720" alt="Modelo entidad-relación de la base de datos SQLite de BidMarket+">
+</p>
