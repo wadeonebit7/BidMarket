@@ -12,16 +12,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repositorio encargado de gestionar las fotografías
- * asociadas a las publicaciones.
- *
- * Las imágenes se almacenan mediante rutas locales.
- * El orden de visualización comienza en 1.
+ * Consulta y actualiza las rutas locales de las fotografías de cada publicación.
+ * El orden empieza en 1 y la primera ruta corresponde a la portada.
  */
 public final class ImagenesRepository {
 
     private final BidMarketDbHelper helper;
 
+    /**
+     * Prepara el acceso a las rutas guardadas en SQLite.
+     *
+     * @param context contexto del que se obtiene el contexto de la aplicación.
+     */
     public ImagenesRepository(Context context) {
         helper = new BidMarketDbHelper(
                 context.getApplicationContext()
@@ -29,11 +31,12 @@ public final class ImagenesRepository {
     }
 
     /**
-     * Obtiene las fotografías de una publicación
-     * ordenadas desde la portada hasta la última imagen.
+     * Consulta las rutas de una publicación en el orden en que se muestran.
      *
-     * @param publicacionId ID de la publicación.
-     * @return Lista de rutas de las fotografías.
+     * @param publicacionId ID de la publicación que se quiere consultar.
+     * @return rutas desde la portada hasta la última imagen, o una lista vacía
+     *         si la publicación no tiene fotografías asociadas.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
      */
     public List<String> listar(long publicacionId) {
 
@@ -80,15 +83,17 @@ public final class ImagenesRepository {
     }
 
     /**
-     * Reemplaza las fotografías de una publicación.
+     * Reemplaza las asociaciones anteriores por las rutas nuevas y usa la primera
+     * como portada. No borra los archivos de imagen del dispositivo.
+     * El repositorio que llama a este método debe administrar la transacción para
+     * poder revertir el reemplazo completo si una inserción falla.
      *
-     * Debe ejecutarse dentro de una transacción
-     * administrada por el repositorio que realiza
-     * la operación principal.
-     *
-     * @param db Base de datos utilizada por la transacción.
-     * @param publicacionId ID de la publicación.
-     * @param rutas Lista ordenada de rutas locales.
+     * @param db base de datos utilizada por la transacción.
+     * @param publicacionId ID de la publicación cuyas fotografías se reemplazan.
+     * @param rutas lista ordenada de entre 1 y 10 rutas locales, con la portada primero.
+     * @throws IllegalArgumentException si la lista es nula, no tiene entre 1 y 10
+     *         rutas o incluye alguna ruta nula o vacía.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
      */
     public void reemplazar(
             SQLiteDatabase db,
@@ -141,8 +146,12 @@ public final class ImagenesRepository {
     }
 
     /**
-     * Verifica que la publicación tenga entre
-     * 1 y 10 fotografías con rutas válidas.
+     * Comprueba la cantidad de fotos y que las rutas tengan contenido.
+     * No comprueba si los archivos existen.
+     *
+     * @param rutas lista de rutas que se quiere validar.
+     * @throws IllegalArgumentException si la lista es nula, no tiene entre 1 y 10
+     *         elementos o alguna ruta es nula o queda vacía al quitar espacios.
      */
     private void validarFotografias(List<String> rutas) {
 

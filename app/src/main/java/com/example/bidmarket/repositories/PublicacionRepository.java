@@ -19,21 +19,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Repositorio de publicaciones, ventas y subastas.
- *
- * Centraliza las operaciones de persistencia relacionadas
- * con publicaciones y sus operaciones asociadas.
- *
- * Las consultas utilizan BidMarketContract para los
- * identificadores del esquema SQLite.
- *
- * Las operaciones de disco deben ejecutarse fuera
- * del hilo principal.
+ * Consulta y guarda publicaciones, ventas directas y subastas en SQLite.
+ * Usa los nombres del esquema definidos en {@link com.example.bidmarket.database.BidMarketContract}.
+ * Las operaciones de base de datos se deben ejecutar fuera del hilo principal.
  */
 public class PublicacionRepository {
 
     private final BidMarketDbHelper helper;
 
+    /**
+     * Prepara el acceso a la base de datos del catálogo.
+     *
+     * @param context contexto del que se obtiene el contexto de la aplicación.
+     */
     public PublicacionRepository(Context context) {
         helper = new BidMarketDbHelper(
                 context.getApplicationContext()
@@ -44,16 +42,36 @@ public class PublicacionRepository {
     // MODELO AUXILIAR DE CATEGORÍAS
     // =====================================================
 
+    /**
+     * Representa una categoría que se puede mostrar en el catálogo o en un selector.
+     */
     public static class Categoria {
 
+        /**
+         * ID de la categoría en SQLite.
+         */
         public final long id;
+        /**
+         * Nombre visible de la categoría.
+         */
         public final String nombre;
 
+        /**
+         * Crea una categoría con los datos consultados.
+         *
+         * @param id ID de la categoría.
+         * @param nombre nombre visible de la categoría.
+         */
         Categoria(long id, String nombre) {
             this.id = id;
             this.nombre = nombre;
         }
 
+        /**
+         * Devuelve el texto que representa a la categoría.
+         *
+         * @return nombre de la categoría.
+         */
         @Override
         public String toString() {
             return nombre;
@@ -64,6 +82,12 @@ public class PublicacionRepository {
     // CONSULTAR CATEGORÍAS
     // =====================================================
 
+    /**
+     * Consulta las categorías disponibles.
+     *
+     * @return categorías ordenadas por nombre, o una lista vacía si no hay ninguna.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public List<Categoria> categorias() {
 
         List<Categoria> resultado = new ArrayList<>();
@@ -108,6 +132,14 @@ public class PublicacionRepository {
     // LISTAR PUBLICACIONES ACTIVAS
     // =====================================================
 
+    /**
+     * Consulta solo las publicaciones activas y busca la portada de cada una.
+     * Incluye la publicación aunque no tenga una portada asociada.
+     *
+     * @return publicaciones ordenadas por ID de mayor a menor, o una lista vacía
+     *         si no hay publicaciones activas.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public List<Publicacion> listar() {
 
         List<Publicacion> resultado = new ArrayList<>();
@@ -166,10 +198,12 @@ public class PublicacionRepository {
     // =====================================================
 
     /**
-     * Devuelve un Cursor para mantener compatibilidad
-     * con DetallePublicacionActivity.
+     * Consulta los datos de una publicación y su portada, si existe.
+     * Quien llama a este método debe cerrar el cursor después de usarlo.
      *
-     * La clase que lo recibe debe cerrar el Cursor.
+     * @param id ID de la publicación que se quiere consultar.
+     * @return cursor sin posicionar, vacío si no se encuentra la publicación.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
      */
     public Cursor detalle(long id) {
 
@@ -213,6 +247,32 @@ public class PublicacionRepository {
     // CREAR O ACTUALIZAR PUBLICACIÓN
     // =====================================================
 
+    /**
+     * Crea o actualiza una publicación y su galería en una sola transacción.
+     * Si corresponde, también guarda la subasta o elimina la anterior. Solo el
+     * propietario puede editar una publicación activa o pausada.
+     *
+     * @param id ID de la publicación que se quiere editar, o {@code 0} para crear una nueva.
+     * @param vendedorId ID del propietario de la publicación.
+     * @param categoriaId ID de la categoría.
+     * @param titulo título de la publicación.
+     * @param descripcion descripción del producto.
+     * @param precio precio publicado, mayor que cero.
+     * @param condicion condición del producto.
+     * @param ubicacion nombre de la ubicación que se muestra en la publicación.
+     * @param imagen parámetro conservado por compatibilidad. Este método no lo usa.
+     * @param subasta {@code true} para publicar como subasta, o {@code false} para venta directa.
+     * @param inicio fecha de inicio de la subasta en milisegundos desde la época Unix.
+     * @param fin fecha de cierre en milisegundos desde la época Unix. Para una subasta,
+     *         debe ser posterior al inicio y al momento en que se guarda.
+     * @param lat latitud. Se guarda solo si ambas coordenadas están presentes.
+     * @param lon longitud. Se guarda solo si ambas coordenadas están presentes.
+     * @param rutasImagenes lista ordenada de 1 a 10 rutas de imágenes, con la portada primero.
+     * @return ID de la publicación creada o actualizada.
+     * @throws IllegalArgumentException si faltan datos básicos, no se permite la edición,
+     *         la cantidad de fotos o las fechas no son válidas, o la subasta ya tiene pujas.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
+     */
     public long guardar(
             long id,
             int vendedorId,
@@ -489,6 +549,14 @@ public class PublicacionRepository {
     // MÉTODOS PRIVADOS DE SUBASTAS
     // =====================================================
 
+    /**
+     * Comprueba si la subasta de una publicación tiene ofertas registradas.
+     *
+     * @param db base de datos donde se hace la consulta.
+     * @param publicacionId ID de la publicación asociada.
+     * @return {@code true} si hay al menos una puja, o {@code false} si no.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     private boolean tienePujas(
             SQLiteDatabase db,
             long publicacionId
@@ -512,6 +580,13 @@ public class PublicacionRepository {
         }
     }
 
+    /**
+     * Elimina la subasta asociada a la publicación, si existe.
+     *
+     * @param db base de datos donde se hace la eliminación.
+     * @param publicacionId ID de la publicación asociada.
+     * @throws android.database.sqlite.SQLiteException si falla la eliminación.
+     */
     private void eliminarSubasta(
             SQLiteDatabase db,
             long publicacionId
@@ -527,6 +602,18 @@ public class PublicacionRepository {
     // CAMBIAR ESTADO DE PUBLICACIÓN
     // =====================================================
 
+    /**
+     * Actualiza el estado y la fecha de modificación de una publicación activa
+     * o pausada. Si se marca como borrada, registra la fecha de eliminación sin
+     * eliminar la fila de la base de datos.
+     *
+     * @param id ID de la publicación.
+     * @param propietario ID del propietario que solicita el cambio.
+     * @param estado nuevo estado. Puede ser activo, pausado, vendido o borrado.
+     * @return {@code true} si se actualiza una fila. Devuelve {@code false} si el
+     *         estado no es válido o no se encuentra una publicación editable del propietario.
+     * @throws android.database.sqlite.SQLiteException si falla la actualización.
+     */
     public boolean cambiarEstado(
             long id,
             int propietario,
@@ -578,6 +665,18 @@ public class PublicacionRepository {
     // REGISTRAR PUJA
     // =====================================================
 
+    /**
+     * Registra una puja para una publicación activa cuya subasta está dentro de
+     * su plazo. Si la oferta desplaza a otro postor, guarda un aviso local para él
+     * en la misma transacción.
+     *
+     * @param publicacionId ID de la publicación en subasta.
+     * @param postorId ID del usuario que hace la oferta.
+     * @param monto monto que debe alcanzar el precio inicial y superar la mayor puja.
+     * @throws IllegalArgumentException si no hay una subasta disponible, está fuera
+     *         de plazo, el postor es el vendedor o el monto no cumple los requisitos.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
+     */
     public void ofertar(
             long publicacionId,
             int postorId,
@@ -734,6 +833,16 @@ public class PublicacionRepository {
     // REGISTRAR COMPRA LOCAL
     // =====================================================
 
+    /**
+     * Registra la compra de una publicación activa de venta directa, la marca
+     * como vendida y guarda un aviso local para el vendedor. No procesa pagos.
+     *
+     * @param pubId ID de la publicación que se quiere comprar.
+     * @param comprador ID del usuario que realiza la compra.
+     * @throws IllegalArgumentException si la publicación no está disponible para
+     *         venta directa o si el comprador es el vendedor.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
+     */
     public void comprar(long pubId, int comprador) {
 
         SQLiteDatabase db = helper.getWritableDatabase();
@@ -853,6 +962,15 @@ public class PublicacionRepository {
     // CONSULTAR ESTADO DE SUBASTA
     // =====================================================
 
+    /**
+     * Consulta las fechas, el precio inicial y la mayor oferta de la subasta.
+     *
+     * @param pubId ID de la publicación asociada.
+     * @return arreglo con el inicio y el fin en milisegundos, el precio inicial
+     *         y la mayor puja, en ese orden. La mayor puja vale {@code 0} si no
+     *         hay ofertas. Devuelve {@code null} si no existe una subasta asociada.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public long[] estadoSubasta(long pubId) {
 
         String sql =

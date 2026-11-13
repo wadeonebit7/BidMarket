@@ -29,6 +29,11 @@ public final class ChatRepository {
 
     private final BidMarketDbHelper helper;
 
+    /**
+     * Prepara el acceso a los chats y mensajes guardados en SQLite.
+     *
+     * @param context contexto del que se obtiene el contexto de la aplicación.
+     */
     public ChatRepository(Context context) {
         helper = new BidMarketDbHelper(
                 context.getApplicationContext()
@@ -39,13 +44,36 @@ public final class ChatRepository {
     // MODELOS DE RESULTADO
     // =====================================================
 
+    /**
+     * Resumen de una conversación que se muestra en el historial.
+     */
     public static final class Entrada {
 
+        /**
+         * ID de la conversación.
+         */
         public final long id;
+        /**
+         * Título de la publicación asociada.
+         */
         public final String titulo;
+        /**
+         * Nombre del otro participante.
+         */
         public final String interlocutor;
+        /**
+         * Último mensaje o aviso de conversación nueva.
+         */
         public final String ultimo;
 
+        /**
+         * Crea un resumen de la conversación.
+         *
+         * @param id ID de la conversación.
+         * @param titulo título de la publicación asociada.
+         * @param interlocutor nombre del otro participante.
+         * @param ultimo texto del último mensaje o el aviso de conversación nueva.
+         */
         public Entrada(
                 long id,
                 String titulo,
@@ -59,12 +87,31 @@ public final class ChatRepository {
         }
     }
 
+    /**
+     * Representa un mensaje local con su identificador, autor y texto.
+     */
     public static final class Mensaje {
 
+        /**
+         * ID del mensaje.
+         */
         public final long id;
+        /**
+         * ID del usuario que lo envió.
+         */
         public final int autor;
+        /**
+         * Contenido del mensaje.
+         */
         public final String texto;
 
+        /**
+         * Crea un mensaje a partir de los datos consultados.
+         *
+         * @param id ID del mensaje.
+         * @param autor ID del usuario que lo envió.
+         * @param texto contenido del mensaje.
+         */
         public Mensaje(long id, int autor, String texto) {
             this.id = id;
             this.autor = autor;
@@ -77,10 +124,17 @@ public final class ChatRepository {
     // =====================================================
 
     /**
-     * Comprueba las restricciones de la publicación
-     * antes de permitir una nueva conversación.
+     * Comprueba si la publicación admite un chat con el usuario que lo solicita.
+     * Para una subasta, la fecha de cierre debe haber pasado y la subasta no
+     * puede estar cancelada. Para una venta directa, la publicación debe estar
+     * activa o vendida.
      *
-     * Se valida desde SQLite y no únicamente desde la UI.
+     * @param db base de datos donde se consulta la publicación.
+     * @param publicacionId ID de la publicación.
+     * @param solicitante ID del usuario que quiere contactar al vendedor.
+     * @throws IllegalArgumentException si la publicación no existe, está borrada,
+     *         pertenece al solicitante o no cumple las condiciones para abrir el chat.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
      */
     private void validarInicio(
             SQLiteDatabase db,
@@ -165,6 +219,19 @@ public final class ChatRepository {
     // INICIAR O RECUPERAR CHAT
     // =====================================================
 
+    /**
+     * Crea un chat local entre el interesado y el vendedor, o recupera el chat
+     * que ya existe para esa publicación y ese interesado. Valida las condiciones
+     * de acceso incluso cuando el chat ya existe.
+     *
+     * @param publicacionId ID de la publicación por la que se inicia el chat.
+     * @param interesado ID del usuario que quiere contactar al vendedor.
+     * @return ID del chat creado o recuperado.
+     * @throws IllegalArgumentException si el usuario no existe o la publicación no
+     *         permite abrir el chat, por ejemplo, si la subasta aún no termina.
+     * @throws IllegalStateException si no se encuentra el chat tras intentar crearlo.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
+     */
     public long iniciar(long publicacionId, int interesado) {
 
         SQLiteDatabase db = helper.getWritableDatabase();
@@ -264,6 +331,14 @@ public final class ChatRepository {
     // VERIFICAR PARTICIPACIÓN
     // =====================================================
 
+    /**
+     * Comprueba si el usuario es el comprador o el vendedor del chat.
+     *
+     * @param chatId ID de la conversación.
+     * @param usuario ID del usuario que se quiere comprobar.
+     * @return {@code true} si el usuario participa en el chat, o {@code false} si no.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public boolean participante(long chatId, int usuario) {
 
         SQLiteDatabase db = helper.getReadableDatabase();
@@ -295,6 +370,15 @@ public final class ChatRepository {
     // OBTENER TÍTULO DE CONVERSACIÓN
     // =====================================================
 
+    /**
+     * Obtiene el título que se muestra al abrir una conversación.
+     *
+     * @param chatId ID de la conversación.
+     * @param usuario ID del participante que consulta el título.
+     * @return título de la publicación y nombre del otro participante, separados por un punto medio.
+     * @throws IllegalArgumentException si el chat no existe o el usuario no participa.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public String titulo(long chatId, int usuario) {
 
         SQLiteDatabase db = helper.getReadableDatabase();
@@ -352,6 +436,15 @@ public final class ChatRepository {
     // HISTORIAL DE CONVERSACIONES
     // =====================================================
 
+    /**
+     * Consulta los chats en los que participa el usuario. Para cada chat incluye
+     * el último mensaje o un aviso si todavía no tiene mensajes.
+     *
+     * @param usuario ID del usuario que consulta su historial.
+     * @return conversaciones ordenadas de la más reciente a la más antigua según
+     *         la actividad del chat, o una lista vacía si no hay conversaciones.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public List<Entrada> historial(int usuario) {
 
         List<Entrada> resultado = new ArrayList<>();
@@ -427,6 +520,16 @@ public final class ChatRepository {
     // LISTAR MENSAJES
     // =====================================================
 
+    /**
+     * Consulta los mensajes de una conversación después de comprobar que el
+     * usuario participa en ella.
+     *
+     * @param chatId ID de la conversación.
+     * @param usuario ID del usuario que consulta los mensajes.
+     * @return mensajes ordenados por ID de menor a mayor, o una lista vacía si no hay mensajes.
+     * @throws IllegalArgumentException si el chat no existe o el usuario no participa.
+     * @throws android.database.sqlite.SQLiteException si falla la consulta.
+     */
     public List<Mensaje> mensajes(long chatId, int usuario) {
 
         if (!participante(chatId, usuario)) {
@@ -483,6 +586,18 @@ public final class ChatRepository {
     // ENVIAR MENSAJE
     // =====================================================
 
+    /**
+     * Guarda un mensaje local después de validar el texto, la participación
+     * del usuario y, si corresponde, el cierre de la subasta.
+     *
+     * @param chatId ID de la conversación.
+     * @param usuario ID del usuario que envía el mensaje.
+     * @param texto contenido del mensaje, de 1 a 2000 caracteres después de quitar
+     *         los espacios del inicio y del final.
+     * @throws IllegalArgumentException si el texto no cumple el límite, el chat
+     *         no existe, el usuario no participa o la subasta no permite enviar mensajes.
+     * @throws android.database.sqlite.SQLiteException si falla una operación de SQLite.
+     */
     public void enviar(
             long chatId,
             int usuario,
