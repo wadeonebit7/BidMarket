@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Patterns;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
@@ -46,8 +47,8 @@ public final class RegisterActivity extends AppCompatActivity {
      *
      * @param state estado guardado de la pantalla, o {@code null} si no hay uno.
      */
-    @Override protected void onCreate(Bundle state) {
-        super.onCreate(state);
+    @Override protected void onCreate(Bundle state) {super.onCreate(state);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_register);
 
         View botonGoogle = findViewById(R.id.btnGoogleRegistro);

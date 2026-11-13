@@ -60,9 +60,9 @@ BidMarket+ usa varias `Activities` para separar las pantallas de acceso, catálo
 ## Instalación y ejecución
 
 1. Clona el repositorio y abre la raíz del proyecto en Android Studio.
-2. Instala el **SDK de Android API 37**, que es el SDK de compilación configurado en el proyecto. Para ejecutar la app basta un dispositivo o emulador con **API 30 o superior**. Para probar Google y Maps, usa un dispositivo o emulador con Servicios de Google Play.
-3. Configura **Firebase** para el paquete `com.example.bidmarket`. Agrega la huella SHA-1 de la firma con la que ejecutarás la app, habilita Google en **Authentication → Métodos de acceso** y coloca el archivo actualizado `google-services.json` en `app/`. Puedes obtener la huella desde PowerShell con `.\gradlew.bat signingReport`. Consulta la [guía de acceso con Google en Firebase](https://firebase.google.com/docs/auth/android/google).
-4. Habilita **Maps SDK for Android** en Google Cloud y agrega la clave a `local.properties`, en la raíz del proyecto. Usa una clave separada para Maps y restríngela al SDK, al nombre del paquete y a la huella de la firma. No subas `local.properties` al repositorio. Consulta la [guía de configuración de Maps](https://developers.google.com/maps/documentation/android-sdk/get-api-key).
+2. Instala el **SDK de Android API 37**, que es el SDK de compilación configurado en el proyecto. Para ejecutar la app basta un dispositivo con **API 30 o superior**. Para probar Google y Maps, usa un dispositivo o emulador con Servicios de Google Play.
+3. Configura **Firebase** para el paquete `com.example.bidmarket`. Agrega la huella SHA-1 de la firma con la que ejecutarás la app, habilita Google en **Authentication → Métodos de acceso** y coloca el archivo actualizado `google-services.json` en `app/`. Puedes obtener la huella desde PowerShell con `.\gradlew.bat signingReport`.
+4. Habilita **Maps SDK for Android** en Google Cloud y agrega la clave a `local.properties`, en la raíz del proyecto. Usa una clave separada para Maps y restríngela al SDK, al nombre del paquete y a la huella de la firma. No subas `local.properties` al repositorio.
 
    ```properties
    MAPS_API_KEY=TU_CLAVE_DE_MAPS

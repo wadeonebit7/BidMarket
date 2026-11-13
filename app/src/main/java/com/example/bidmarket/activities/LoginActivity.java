@@ -11,6 +11,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.graphics.Color;
 import android.view.View;
+import android.view.WindowManager;
 
 import androidx.core.view.WindowCompat;
 
@@ -35,6 +36,7 @@ public class LoginActivity extends AppCompatActivity {
      * @param state estado guardado de la pantalla, o {@code null} si no hay uno.
      */
     @Override protected void onCreate(Bundle state){super.onCreate(state);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SECURE);
         setContentView(R.layout.activity_login);
 
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
